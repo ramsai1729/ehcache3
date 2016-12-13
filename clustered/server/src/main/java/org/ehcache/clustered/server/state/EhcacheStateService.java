@@ -66,4 +66,13 @@ public interface EhcacheStateService {
 
   InvalidationTracker removeInvalidationtracker(String cacheId);
 
+  /**
+   * <p>Loads this {@link EhcacheStateService} state from some persistent state.</p>
+   *
+   * <p>Note that implementations needs to handle restartable or fail-over cases as this method will be called
+   * in both cases. </p>
+   *
+   */
+  void loadExisting();
+
 }

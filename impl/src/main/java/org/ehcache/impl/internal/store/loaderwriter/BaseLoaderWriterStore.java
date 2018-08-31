@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -88,8 +89,30 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
   }
 
   @Override
-  public ValueHolder<V> putIfAbsent(K key, V value) throws StoreAccessException {
-    return null;
+  public ValueHolder<V> putIfAbsent(K key, V value, Consumer<Boolean> put) throws StoreAccessException {
+    Function<K, V> mappingFunction = k -> {
+      if (useLoaderInAtomics) {
+        try {
+          V loaded = cacheLoaderWriter.load(k);
+          if (loaded != null) {
+            return loaded; // populate the cache
+          }
+        } catch (Exception e) {
+          throw new StorePassThroughException(newCacheLoadingException(e));
+        }
+      }
+
+      try {
+        cacheLoaderWriter.write(k, value);
+      } catch (Exception e) {
+        throw new StorePassThroughException(newCacheWritingException(e));
+      }
+
+      put.accept(true);
+      return value;
+    };
+
+    return delegate.computeIfAbsent(key, mappingFunction);
   }
 
   @Override
@@ -171,6 +194,9 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
     };
 
     delegate.compute(key, remappingFunction);
+    if (old[0] == null) {
+      return null;
+    }
     return new LoaderWriterValueHolder<>(old[0]);
   }
 

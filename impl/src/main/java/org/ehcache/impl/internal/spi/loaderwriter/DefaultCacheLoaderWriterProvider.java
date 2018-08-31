@@ -21,6 +21,7 @@ import org.ehcache.impl.config.loaderwriter.DefaultCacheLoaderWriterConfiguratio
 import org.ehcache.impl.config.loaderwriter.DefaultCacheLoaderWriterProviderConfiguration;
 import org.ehcache.impl.internal.classes.ClassInstanceProvider;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
+import org.ehcache.spi.loaderwriter.CacheLoaderWriterConfiguration;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriterProvider;
 
 /**
@@ -39,7 +40,13 @@ public class DefaultCacheLoaderWriterProvider extends ClassInstanceProvider<Stri
   }
 
   @Override
-  public void releaseCacheLoaderWriter(final CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception {
+  public void releaseCacheLoaderWriter(CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception {
     releaseInstance(cacheLoaderWriter);
   }
+
+  @Override
+  public CacheLoaderWriterConfiguration getPreConfiguredCacheLoaderWriterConfig(String alias) {
+    return (CacheLoaderWriterConfiguration) getPreconfigured(alias);
+  }
+
 }

@@ -20,12 +20,15 @@ import org.ehcache.core.internal.store.StoreSupport;
 import org.ehcache.core.spi.store.Store;
 import org.ehcache.impl.config.loaderwriter.DefaultCacheLoaderWriterConfiguration;
 import org.ehcache.impl.internal.concurrent.ConcurrentHashMap;
+import org.ehcache.spi.loaderwriter.CacheLoaderWriterConfiguration;
 import org.ehcache.spi.service.Service;
 import org.ehcache.spi.service.ServiceConfiguration;
 import org.ehcache.spi.service.ServiceProvider;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,14 +37,17 @@ import static org.ehcache.core.spi.service.ServiceUtils.findSingletonAmongst;
 public class LoaderWriterStoreProvider implements Store.Provider {
 
   private volatile ServiceProvider<Service> serviceProvider;
+
   private final Map<Store<?, ?>, StoreRef<?, ?>> createdStores = new ConcurrentHashMap<>();
 
   @Override
-  public <K, V> Store<K, V> createStore(Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
-    Store.Provider underlyingStoreProvider = StoreSupport.selectStoreProvider(serviceProvider,
-            storeConfig.getResourcePools().getResourceTypeSet(), Arrays.asList(serviceConfigs));
-    Store<K, V> store = underlyingStoreProvider.createStore(storeConfig, serviceConfigs);
-    BaseLoaderWriterStore<K, V> loaderWriterStore = new BaseLoaderWriterStore<>(store, null, true, storeConfig.getExpiry());
+  public <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
+    Store.Provider underlyingStoreProvider = selectProvider(storeConfig.getResourcePools().getResourceTypeSet(),
+            Arrays.asList(serviceConfigs), loaderWriterConfiguration);
+    Store<K, V> store = underlyingStoreProvider.createStore(useLoaderInAtomics , storeConfig, serviceConfigs);
+
+    BaseLoaderWriterStore<K, V> loaderWriterStore = new BaseLoaderWriterStore<>(store, storeConfig.getCacheLoaderWriter(), useLoaderInAtomics, storeConfig.getExpiry());
     createdStores.put(loaderWriterStore, new StoreRef<>(store, underlyingStoreProvider));
     return loaderWriterStore;
   }
@@ -55,16 +61,29 @@ public class LoaderWriterStoreProvider implements Store.Provider {
   @Override
   public void initStore(Store<?, ?> resource) {
     StoreRef<?, ?> storeRef = createdStores.get(resource);
-    storeRef.getUnderlyingStoreProvider().releaseStore(storeRef.getUnderlyingStore());
+    storeRef.getUnderlyingStoreProvider().initStore(storeRef.getUnderlyingStore());
   }
 
   @Override
   public int rank(Set<ResourceType<?>> resourceTypes, Collection<ServiceConfiguration<?>> serviceConfigs) {
-    DefaultCacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
-    if (loaderWriterConfiguration != null && resourceTypes.stream().noneMatch(x -> x.getTierHeight() != 10)) {
-      return 1;
+    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
+    if (loaderWriterConfiguration == null) {
+      return 0;
+    }
+    if (resourceTypes.stream().allMatch(x -> x.getTierHeight() != 10)) {
+      Store.Provider underlyingStoreprovider = selectProvider(resourceTypes, serviceConfigs, loaderWriterConfiguration);
+
+      return 2000 + underlyingStoreprovider.rank(resourceTypes, serviceConfigs);
     }
     return 0;
+  }
+
+  private Store.Provider selectProvider(Set<ResourceType<?>> resourceTypes,
+                                        Collection<ServiceConfiguration<?>> serviceConfigs,
+                                        CacheLoaderWriterConfiguration loaderWriterConfiguration) {
+    List<ServiceConfiguration<?>> configsWithoutLoaderWriter = new ArrayList<>(serviceConfigs);
+    configsWithoutLoaderWriter.remove(loaderWriterConfiguration);
+    return StoreSupport.selectStoreProvider(serviceProvider, resourceTypes, configsWithoutLoaderWriter);
   }
 
   @Override
@@ -75,6 +94,7 @@ public class LoaderWriterStoreProvider implements Store.Provider {
   @Override
   public void stop() {
     this.serviceProvider = null;
+    this.createdStores.clear();
   }
 
   private static class StoreRef<K, V> {
@@ -93,6 +113,7 @@ public class LoaderWriterStoreProvider implements Store.Provider {
     public Store<K, V> getUnderlyingStore() {
       return underlyingStore;
     }
+
   }
 
 }

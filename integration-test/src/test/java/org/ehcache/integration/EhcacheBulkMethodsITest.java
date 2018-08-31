@@ -525,7 +525,7 @@ public class EhcacheBulkMethodsITest {
     }
 
     @Override
-    public <K, V> Store<K, V> createStore(Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+    public <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
       ServiceLocator serviceLocator = dependencySet().with(new DefaultSerializationProvider(null)).build();
       try {
         serviceLocator.startAllServices();

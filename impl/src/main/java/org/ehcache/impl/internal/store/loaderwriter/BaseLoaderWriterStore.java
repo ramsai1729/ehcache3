@@ -30,6 +30,8 @@ import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
 import org.ehcache.spi.resilience.StoreAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.terracotta.context.ContextManager;
+import org.terracotta.statistics.StatisticsManager;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -64,6 +66,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
     this.cacheLoaderWriter = cacheLoaderWriter;
     this.useLoaderInAtomics = useLoaderInAtomics;
     this.expiry = expiry;
+    ContextManager.associate(delegate).withParent(this);
   }
 
   @Override

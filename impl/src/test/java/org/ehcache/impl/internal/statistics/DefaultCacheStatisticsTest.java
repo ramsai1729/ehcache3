@@ -55,7 +55,6 @@ import static org.ehcache.config.builders.ResourcePoolsBuilder.*;
 import static org.ehcache.config.units.EntryUnit.*;
 import static org.ehcache.config.units.MemoryUnit.*;
 
-@org.junit.Ignore
 @RunWith(Parameterized.class)
 public class DefaultCacheStatisticsTest {
 

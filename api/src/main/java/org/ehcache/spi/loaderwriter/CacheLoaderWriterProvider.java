@@ -59,12 +59,20 @@ public interface CacheLoaderWriterProvider extends Service {
   void releaseCacheLoaderWriter(String alias, CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception;
 
   /**
-   * Checks whether a {@link org.ehcache.spi.loaderwriter.CacheLoaderWriter} is configured for the given alias
+   * Returns preconfigured {@link org.ehcache.spi.loaderwriter.CacheLoaderWriter} for the given alias
    *
    * @param alias the {@code Cache} alias in the {@code CacheManager}
    *
    * @return {@code true} if a {@code CacheLoaderWriterConfiguration} is configured for the {@code Cache}, {@code false} otherwise
    */
   CacheLoaderWriterConfiguration getPreConfiguredCacheLoaderWriterConfig(String alias);
+
+  /**
+   * Checks whether  {@link org.ehcache.spi.loaderwriter.CacheLoaderWriter} was provided using jsr api
+   *
+   * @param alias the {@code Cache} alias in the {@code CacheManager}
+   * @return {@code true} if {@code CacheLoaderWriter} was provided using jsr api, otherwise false.
+   */
+  boolean isLoaderJsrProvided(String alias);
 
 }

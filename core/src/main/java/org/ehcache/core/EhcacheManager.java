@@ -342,7 +342,7 @@ public class EhcacheManager implements PersistentCacheManager, InternalCacheMana
         lifeCycledList.add(new LifeCycledAdapter() {
           @Override
           public void close() throws Exception {
-            cacheLoaderWriterProvider.releaseCacheLoaderWriter(loaderWriter);
+            cacheLoaderWriterProvider.releaseCacheLoaderWriter(alias, loaderWriter);
           }
         });
       }

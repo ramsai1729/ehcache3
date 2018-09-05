@@ -24,10 +24,15 @@ import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriterConfiguration;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriterProvider;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @author Alex Snaps
  */
 public class DefaultCacheLoaderWriterProvider extends ClassInstanceProvider<String, CacheLoaderWriter<?, ?>> implements CacheLoaderWriterProvider {
+
+  private final List<String> cachesWithJsrRegisteredLoaders = new ArrayList<>();
 
   public DefaultCacheLoaderWriterProvider(DefaultCacheLoaderWriterProviderConfiguration configuration) {
     super(configuration, DefaultCacheLoaderWriterConfiguration.class, true);
@@ -40,13 +45,21 @@ public class DefaultCacheLoaderWriterProvider extends ClassInstanceProvider<Stri
   }
 
   @Override
-  public void releaseCacheLoaderWriter(CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception {
+  public void releaseCacheLoaderWriter(String alias, CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception {
     releaseInstance(cacheLoaderWriter);
   }
 
   @Override
   public CacheLoaderWriterConfiguration getPreConfiguredCacheLoaderWriterConfig(String alias) {
     return (CacheLoaderWriterConfiguration) getPreconfigured(alias);
+  }
+
+  protected void registerJsrLoaderForCache(String alias) {
+    cachesWithJsrRegisteredLoaders.add(alias);
+  }
+
+  protected void deregisterJsrLoaderForCache(String alias) {
+    cachesWithJsrRegisteredLoaders.remove(alias);
   }
 
 }

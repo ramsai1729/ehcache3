@@ -51,10 +51,12 @@ public interface CacheLoaderWriterProvider extends Service {
    * If the {@code CacheLoaderWriter} instance was user provided {@link java.io.Closeable#close() close}
    * will not be invoked.
    *
+   *
+   * @param alias the {@code Cache} alias in the {@code CacheManager}
    * @param cacheLoaderWriter the {@code CacheLoaderWriter} being released
    * @throws Exception when the release fails
    */
-  void releaseCacheLoaderWriter(CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception;
+  void releaseCacheLoaderWriter(String alias, CacheLoaderWriter<?, ?> cacheLoaderWriter) throws Exception;
 
   /**
    * Checks whether a {@link org.ehcache.spi.loaderwriter.CacheLoaderWriter} is configured for the given alias

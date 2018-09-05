@@ -391,10 +391,10 @@ public abstract class EhcacheBasicCrudBase {
      * {@inheritDoc}
      * <p>
      * This method is implemented as
-     * <code>this.{@link #compute(String, BiFunction, Supplier) compute}(keys, mappingFunction, () -> { returns true; })</code>
+     * <code>this.{@link #compute(String, BiFunction, Supplier) getAndCompute}(keys, mappingFunction, () -> { returns true; })</code>
      */
     @Override
-    public ValueHolder<String> compute(final String key, final BiFunction<? super String, ? super String, ? extends String> mappingFunction)
+    public ValueHolder<String> getAndCompute(final String key, final BiFunction<? super String, ? super String, ? extends String> mappingFunction)
         throws StoreAccessException {
       return this.compute(key, mappingFunction, REPLACE_EQUAL_TRUE);
     }
@@ -515,7 +515,7 @@ public abstract class EhcacheBasicCrudBase {
      * {@inheritDoc}
      * <p>
      * This implementation calls {@link #compute(String, BiFunction, Supplier)
-     *    compute(key, BiFunction, replaceEqual)} for each key presented in {@code keys}.
+     *    getAndCompute(key, BiFunction, replaceEqual)} for each key presented in {@code keys}.
      */
     @Override
     public Map<String, Store.ValueHolder<String>> bulkCompute(

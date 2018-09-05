@@ -118,14 +118,15 @@ public class OnHeapStoreValueCopierTest {
   }
 
   @Test
-  public void testCompute() throws StoreAccessException {
-    final Store.ValueHolder<Value> firstValue = store.compute(KEY, (aLong, value) -> VALUE);
-    store.compute(KEY, (aLong, value) -> {
-      compareReadValues(value, firstValue.get());
+  public void testGetAndCompute() throws StoreAccessException {
+    store.put(KEY, VALUE);
+    final Store.ValueHolder<Value> oldValue = store.getAndCompute(KEY, (aLong, value) -> VALUE);
+    store.getAndCompute(KEY, (aLong, value) -> {
+      compareReadValues(value, oldValue.get());
       return value;
     });
 
-    compareValues(VALUE, firstValue.get());
+    compareValues(VALUE, oldValue.get());
   }
 
   @Test

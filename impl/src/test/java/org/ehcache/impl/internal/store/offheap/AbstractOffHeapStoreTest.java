@@ -412,7 +412,7 @@ public abstract class AbstractOffHeapStoreTest {
     offHeapStore.put("key", "value");
     timeSource.advanceTime(20L);
 
-    offHeapStore.compute("key", (mappedKey, mappedValue) -> {
+    offHeapStore.getAndCompute("key", (mappedKey, mappedValue) -> {
       assertThat(mappedKey, is("key"));
       assertThat(mappedValue, Matchers.nullValue());
       return "value2";

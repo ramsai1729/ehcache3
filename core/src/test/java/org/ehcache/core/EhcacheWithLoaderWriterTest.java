@@ -172,7 +172,7 @@ public class EhcacheWithLoaderWriterTest extends CacheTest {
     }
 
     @Override
-    public ValueHolder<String> compute(String key, BiFunction<? super String, ? super String, ? extends String> mappingFunction) throws StoreAccessException {
+    public ValueHolder<String> getAndCompute(String key, BiFunction<? super String, ? super String, ? extends String> mappingFunction) throws StoreAccessException {
       throw new UnsupportedOperationException("TODO Implement me!");
     }
 

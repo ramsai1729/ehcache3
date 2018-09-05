@@ -118,7 +118,7 @@ public abstract class AbstractOffHeapStore<K, V> extends BaseStore<K, V> impleme
     this.conditionalRemoveObserver = createObserver("conditionalRemove", StoreOperationOutcomes.ConditionalRemoveOutcome.class, true);
     this.replaceObserver = createObserver("replace", StoreOperationOutcomes.ReplaceOutcome.class, true);
     this.conditionalReplaceObserver = createObserver("conditionalReplace", StoreOperationOutcomes.ConditionalReplaceOutcome.class, true);
-    this.computeObserver = createObserver("compute", StoreOperationOutcomes.ComputeOutcome.class, true);
+    this.computeObserver = createObserver("getAndCompute", StoreOperationOutcomes.ComputeOutcome.class, true);
     this.computeIfAbsentObserver = createObserver("computeIfAbsent", StoreOperationOutcomes.ComputeIfAbsentOutcome.class, true);
     this.evictionObserver = createObserver("eviction", StoreOperationOutcomes.EvictionOutcome.class, false);
     this.expirationObserver = createObserver("expiration", StoreOperationOutcomes.ExpirationOutcome.class, false);
@@ -521,7 +521,7 @@ public abstract class AbstractOffHeapStore<K, V> extends BaseStore<K, V> impleme
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
+  public ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
     return compute(key, mappingFunction, REPLACE_EQUALS_TRUE);
   }
 

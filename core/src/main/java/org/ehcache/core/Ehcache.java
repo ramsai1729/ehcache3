@@ -219,7 +219,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
 
       final AtomicReference<V> existingValue = new AtomicReference<>();
       try {
-        store.compute(key, (mappedKey, mappedValue) -> {
+        store.getAndCompute(key, (mappedKey, mappedValue) -> {
           existingValue.set(mappedValue);
 
           return null;
@@ -247,7 +247,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
 
       final AtomicReference<V> existingValue = new AtomicReference<>();
       try {
-        store.compute(key, (mappedKey, mappedValue) -> {
+        store.getAndCompute(key, (mappedKey, mappedValue) -> {
           existingValue.set(mappedValue);
 
           if (newValueAlreadyExpired(mappedKey, mappedValue, value)) {
@@ -273,7 +273,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
     }
   }
 
-  // The compute function that will return the keys to their NEW values, taking the keys to their old values as input;
+  // The getAndCompute function that will return the keys to their NEW values, taking the keys to their old values as input;
   // but this could happen in batches, i.e. not necessary containing all of the entries of the Iterable passed to this method
   public static class PutAllFunction<K, V> implements Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> {
 

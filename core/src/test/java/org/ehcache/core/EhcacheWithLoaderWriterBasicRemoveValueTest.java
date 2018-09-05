@@ -154,7 +154,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key not present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    * </ul>
    */
   @Test
@@ -175,7 +175,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with unequal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    * </ul>
    */
   @Test
@@ -196,7 +196,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with equal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    * </ul>
    */
   @Test
@@ -286,7 +286,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key not present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key not present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -311,7 +311,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with unequal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key not present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -336,7 +336,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with equal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key not present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -430,7 +430,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key not present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with unequal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -455,7 +455,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with unequal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with unequal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -480,7 +480,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with equal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with unequal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -574,7 +574,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key not present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with equal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -599,7 +599,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with unequal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with equal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -624,7 +624,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with equal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>key with equal value present via {@code CacheLoaderWriter}</li>
    * </ul>
    */
@@ -729,7 +729,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key not present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>{@code CacheLoaderWriter.delete} throws</li>
    * </ul>
    */
@@ -759,7 +759,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with unequal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>{@code CacheLoaderWriter.delete} throws</li>
    * </ul>
    */
@@ -784,7 +784,7 @@ public class EhcacheWithLoaderWriterBasicRemoveValueTest extends EhcacheBasicCru
    * Tests the effect of a {@link EhcacheWithLoaderWriter#remove(Object, Object)} for
    * <ul>
    *   <li>key with equal value present in {@code Store}</li>
-   *   <li>>{@code Store.compute} throws</li>
+   *   <li>>{@code Store.getAndCompute} throws</li>
    *   <li>{@code CacheLoaderWriter.delete} throws</li>
    * </ul>
    */

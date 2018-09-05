@@ -22,7 +22,6 @@ import org.ehcache.core.exceptions.StorePassThroughException;
 import org.ehcache.core.internal.util.CollectionUtil;
 import org.ehcache.core.spi.store.Store;
 import org.ehcache.core.spi.store.events.StoreEventSource;
-import org.ehcache.core.statistics.BulkOps;
 import org.ehcache.expiry.ExpiryPolicy;
 import org.ehcache.spi.loaderwriter.BulkCacheLoadingException;
 import org.ehcache.spi.loaderwriter.BulkCacheWritingException;
@@ -31,7 +30,6 @@ import org.ehcache.spi.resilience.StoreAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.terracotta.context.ContextManager;
-import org.terracotta.statistics.StatisticsManager;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -97,7 +95,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
       return value;
     };
 
-    delegate.compute(key, remappingFunction);
+    delegate.getAndCompute(key, remappingFunction);
     return Store.PutStatus.PUT;
   }
 
@@ -143,7 +141,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
       return null;
     };
 
-    delegate.compute(key, remappingFunction);
+    delegate.getAndCompute(key, remappingFunction);
     return modified[0];
   }
 
@@ -206,7 +204,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
       return value;
     };
 
-    delegate.compute(key, remappingFunction);
+    delegate.getAndCompute(key, remappingFunction);
     if (old[0] == null) {
       return null;
     }
@@ -269,8 +267,8 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
-    throw new UnsupportedOperationException("Not supported");
+  public ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
+    return delegate.getAndCompute(key, mappingFunction);
   }
 
   @Override
@@ -297,7 +295,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
 
       int[] actualPutCount = {0};
 
-      // The compute function that will return the keys to their NEW values, taking the keys to their old values as input;
+      // The getAndCompute function that will return the keys to their NEW values, taking the keys to their old values as input;
       // but this could happen in batches, i.e. not necessary containing all of the entries of the Iterable passed to this method
       Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> computeFunction =
               entries1 -> {

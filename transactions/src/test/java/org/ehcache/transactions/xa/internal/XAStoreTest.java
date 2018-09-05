@@ -699,19 +699,19 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       });
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return "un";
       });
       assertThat(computed2.get(), equalTo("un"));
-      Store.ValueHolder<String> computed3 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed3 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("un"));
         return null;
@@ -743,13 +743,13 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       });
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return null;
@@ -762,13 +762,13 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       });
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return "un";
@@ -781,7 +781,7 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("un"));
         return "eins";
@@ -794,7 +794,7 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("eins"));
         return null;
@@ -807,19 +807,19 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("eins"));
         return null;
       });
       assertThat(computed1, is(nullValue()));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return null;
       });
       assertThat(computed2, is(nullValue()));
-      Store.ValueHolder<String> computed3 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed3 = xaStore.getAndCompute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "uno";

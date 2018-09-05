@@ -125,12 +125,12 @@ public class OnHeapStoreKeyCopierTest {
   @Test
   public void testCompute() throws StoreAccessException {
     final Key copyKey = new Key(KEY);
-    store.compute(copyKey, (key, value) -> {
+    store.getAndCompute(copyKey, (key, value) -> {
       assertThat(key, is(copyKey));
       return VALUE;
     });
     copyKey.state = "Different!";
-    store.compute(copyKey, (key, value) -> {
+    store.getAndCompute(copyKey, (key, value) -> {
       if (copyForWrite) {
         assertThat(value, nullValue());
       } else {

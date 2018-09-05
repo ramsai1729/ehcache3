@@ -122,7 +122,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       return value;
     };
 
-    store.compute(key, remappingFunction);
+    store.getAndCompute(key, remappingFunction);
     return Store.PutStatus.PUT;
   }
 
@@ -140,7 +140,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       return null;
     };
 
-    store.compute(key, remappingFunction);
+    store.getAndCompute(key, remappingFunction);
     return modified[0];
   }
 
@@ -219,7 +219,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
 
     int[] actualPutCount = { 0 };
 
-    // The compute function that will return the keys to their NEW values, taking the keys to their old values as input;
+    // The getAndCompute function that will return the keys to their NEW values, taking the keys to their old values as input;
     // but this could happen in batches, i.e. not necessary containing all of the entries of the Iterable passed to this method
     Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> computeFunction =
       entries1 -> {
@@ -456,7 +456,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       return value;
     };
 
-    store.compute(key, remappingFunction);
+    store.getAndCompute(key, remappingFunction);
     return old[0];
   }
 
@@ -598,7 +598,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       V[] existingValue = (V[]) new Object[1];
 
       try {
-        store.compute(key, (mappedKey, mappedValue) -> {
+        store.getAndCompute(key, (mappedKey, mappedValue) -> {
           existingValue[0] = mappedValue;
 
           try {
@@ -634,7 +634,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       V[] existingValue = (V[]) new Object[1];
 
       try {
-        store.compute(key, (mappedKey, mappedValue) -> {
+        store.getAndCompute(key, (mappedKey, mappedValue) -> {
           existingValue[0] = mappedValue;
 
           try {

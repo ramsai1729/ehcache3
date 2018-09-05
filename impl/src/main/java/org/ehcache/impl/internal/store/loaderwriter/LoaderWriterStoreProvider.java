@@ -18,7 +18,6 @@ package org.ehcache.impl.internal.store.loaderwriter;
 import org.ehcache.config.ResourceType;
 import org.ehcache.core.internal.store.StoreSupport;
 import org.ehcache.core.spi.store.Store;
-import org.ehcache.impl.config.loaderwriter.DefaultCacheLoaderWriterConfiguration;
 import org.ehcache.impl.internal.concurrent.ConcurrentHashMap;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriterConfiguration;
 import org.ehcache.spi.service.Service;
@@ -42,7 +41,7 @@ public class LoaderWriterStoreProvider implements Store.Provider {
 
   @Override
   public <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
-    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
+    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(CacheLoaderWriterConfiguration.class, serviceConfigs);
     Store.Provider underlyingStoreProvider = selectProvider(storeConfig.getResourcePools().getResourceTypeSet(),
             Arrays.asList(serviceConfigs), loaderWriterConfiguration);
     Store<K, V> store = underlyingStoreProvider.createStore(useLoaderInAtomics , storeConfig, serviceConfigs);
@@ -66,7 +65,7 @@ public class LoaderWriterStoreProvider implements Store.Provider {
 
   @Override
   public int rank(Set<ResourceType<?>> resourceTypes, Collection<ServiceConfiguration<?>> serviceConfigs) {
-    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
+    CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(CacheLoaderWriterConfiguration.class, serviceConfigs);
     if (loaderWriterConfiguration == null) {
       return 0;
     }

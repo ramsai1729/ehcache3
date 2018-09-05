@@ -547,6 +547,10 @@ public class EhcacheManager implements PersistentCacheManager, InternalCacheMana
       if (preConfiguredCacheLoaderWriterConfig != null) {
         configurationList.add(preConfiguredCacheLoaderWriterConfig);
       }
+      if (loaderWriterProvider.isLoaderJsrProvided(alias)) {
+        configurationList.add(new CacheLoaderWriterConfiguration() {
+        });
+      }
     }
 
     ServiceConfiguration<?>[] serviceConfigurations = new ServiceConfiguration<?>[configurationList.size()];

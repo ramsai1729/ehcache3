@@ -297,7 +297,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * @throws NullPointerException if any of the arguments is {@code null}
    * @throws StoreAccessException if the mapping can't be changed
    *
-   * @see #compute(Object, BiFunction, Supplier)
+   * @see #compute(Object, BiFunction, Supplier, Supplier)
    */
   ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException;
 
@@ -334,6 +334,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * @param key the key to operate on
    * @param mappingFunction the function that will produce the new value.
    * @param replaceEqual indicates if an equal value replaces the existing one
+   * @param invokeWriter indicates if the writer should be invoked
    * @return the new value associated with the key or {@code null} if none
    *
    * @throws ClassCastException if the specified key is not of the correct type {@code K}
@@ -341,7 +342,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * @throws StoreAccessException if the mapping can't be changed
    *
    */
-  ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual) throws StoreAccessException;
+  ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException;
 
   /**
    * Compute the value for the given key (only if absent or expired) by invoking the given function to produce the value.

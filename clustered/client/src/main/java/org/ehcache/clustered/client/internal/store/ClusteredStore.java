@@ -424,7 +424,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
   }
 
   @Override
-  public ValueHolder<V> compute(final K key, final BiFunction<? super K, ? super V, ? extends V> mappingFunction, final Supplier<Boolean> replaceEqual) {
+  public ValueHolder<V> compute(final K key, final BiFunction<? super K, ? super V, ? extends V> mappingFunction, final Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) {
     // TODO: Make appropriate ServerStoreProxy call
     throw new UnsupportedOperationException("Implement me");
   }

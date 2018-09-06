@@ -728,13 +728,13 @@ public class XAStoreTest {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
-      }, () -> Boolean.FALSE);
+      }, () -> Boolean.FALSE, () -> false);
       assertThat(computed1.get(), equalTo("one"));
       Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return null;
-      }, () -> Boolean.FALSE);
+      }, () -> Boolean.FALSE, () -> false);
       assertThat(computed2, is(nullValue()));
     }
     testTransactionManager.commit();

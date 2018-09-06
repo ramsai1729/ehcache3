@@ -516,7 +516,7 @@ public class XAStore<K, V> implements Store<K, V> {
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual) throws StoreAccessException {
+  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
     checkKey(key);
     XATransactionContext<K, V> currentContext = getCurrentContext();
     if (currentContext.touched(key)) {
@@ -553,7 +553,7 @@ public class XAStore<K, V> implements Store<K, V> {
 
   @Override
   public ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
-    return compute(key, mappingFunction, REPLACE_EQUALS_TRUE);
+    return compute(key, mappingFunction, REPLACE_EQUALS_TRUE, () -> false);
   }
 
   @Override
@@ -652,7 +652,7 @@ public class XAStore<K, V> implements Store<K, V> {
           checkValue(value);
         }
         return value;
-      }, replaceEqual);
+      }, replaceEqual, () -> false);
       result.put(key, newValue);
     }
     return result;

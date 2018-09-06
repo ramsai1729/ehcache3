@@ -522,11 +522,11 @@ public abstract class AbstractOffHeapStore<K, V> extends BaseStore<K, V> impleme
 
   @Override
   public ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
-    return compute(key, mappingFunction, REPLACE_EQUALS_TRUE);
+    return compute(key, mappingFunction, REPLACE_EQUALS_TRUE, () -> false);
   }
 
   @Override
-  public ValueHolder<V> compute(final K key, final BiFunction<? super K, ? super V, ? extends V> mappingFunction, final Supplier<Boolean> replaceEqual) throws StoreAccessException {
+  public ValueHolder<V> compute(final K key, final BiFunction<? super K, ? super V, ? extends V> mappingFunction, final Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
     checkKey(key);
 
     computeObserver.begin();
@@ -720,7 +720,7 @@ public abstract class AbstractOffHeapStore<K, V> extends BaseStore<K, V> impleme
           return null;
         }
       };
-      ValueHolder<V> computed = compute(key, biFunction, replaceEqual);
+      ValueHolder<V> computed = compute(key, biFunction, replaceEqual, () -> false);
       result.put(key, computed);
     }
     return result;

@@ -1133,7 +1133,7 @@ public class OnHeapStore<K, V> extends BaseStore<K, V> implements HigherCachingT
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual) throws StoreAccessException {
+  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
     checkKey(key);
 
     computeObserver.begin();
@@ -1341,7 +1341,7 @@ public class OnHeapStore<K, V> extends BaseStore<K, V> implements HigherCachingT
           checkValue(value);
         }
         return value;
-      }, replaceEqual);
+      }, replaceEqual, () -> false);
       result.put(key, newValue);
     }
     return result;

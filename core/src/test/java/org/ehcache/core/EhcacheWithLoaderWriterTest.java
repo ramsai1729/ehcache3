@@ -177,7 +177,7 @@ public class EhcacheWithLoaderWriterTest extends CacheTest {
     }
 
     @Override
-    public ValueHolder<String> compute(String key, BiFunction<? super String, ? super String, ? extends String> mappingFunction, Supplier<Boolean> replaceEqual) throws StoreAccessException {
+    public ValueHolder<String> compute(String key, BiFunction<? super String, ? super String, ? extends String> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
       throw new UnsupportedOperationException("TODO Implement me!");
     }
 

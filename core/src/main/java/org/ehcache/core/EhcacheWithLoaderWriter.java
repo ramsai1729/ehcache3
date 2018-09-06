@@ -419,7 +419,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       return inCache;
     };
 
-    store.compute(key, remappingFunction, SUPPLY_FALSE);
+    store.compute(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
     if (hitRemoved[1]) {
       return Store.RemoveStatus.REMOVED;
     }
@@ -506,7 +506,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
       return inCache;
     };
 
-    store.compute(key, remappingFunction, SUPPLY_FALSE);
+    store.compute(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
     if (successHit[0]) {
       return Store.ReplaceStatus.HIT;
     } else {
@@ -583,7 +583,7 @@ public class EhcacheWithLoaderWriter<K, V> extends EhcacheBase<K, V> {
           return newValue;
         };
 
-        store.compute(key, fn, replaceEqual);
+        store.compute(key, fn, replaceEqual, SUPPLY_FALSE);
       } catch (StoreAccessException e) {
         throw new RuntimeException(e);
       }

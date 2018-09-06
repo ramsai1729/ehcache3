@@ -225,7 +225,7 @@ public class EhcacheLoaderWriterTest {
   @Test
   public void testTwoArgRemoveMatch() throws Exception {
     final String cachedValue = "cached";
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenAnswer(invocation -> {
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenAnswer(invocation -> {
       BiFunction<Number, String, String> function = asBiFunction(invocation);
       function.apply((Number)invocation.getArguments()[0], cachedValue);
       return null;
@@ -248,7 +248,7 @@ public class EhcacheLoaderWriterTest {
 
   @Test
   public void testTwoArgRemoveWriteUnsuccessful() throws Exception {
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenAnswer(invocation -> {
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenAnswer(invocation -> {
       BiFunction<Number, String, String> function = asBiFunction(invocation);
       function.apply((Number)invocation.getArguments()[0], null);
       return null;
@@ -262,7 +262,7 @@ public class EhcacheLoaderWriterTest {
   @Test
   public void testTwoArgRemoveThrowsOnCompute() throws Exception {
     String toRemove = "foo";
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenThrow(new StoreAccessException("boom"));
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenThrow(new StoreAccessException("boom"));
     assertThat(cache.remove(1, toRemove), is(false));
     verify(cache.getCacheLoaderWriter(), never()).delete(1);
     verify(store).remove(1);
@@ -271,7 +271,7 @@ public class EhcacheLoaderWriterTest {
   @Test(expected=CacheWritingException.class)
   public void testTwoArgRemoveThrowsOnWrite() throws Exception {
     final String expected = "foo";
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenAnswer(invocation -> {
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenAnswer(invocation -> {
       BiFunction<Number, String, String> function = asBiFunction(invocation);
       try {
         function.apply((Number)invocation.getArguments()[0], expected);
@@ -330,7 +330,7 @@ public class EhcacheLoaderWriterTest {
     final String cachedValue = "cached";
     final String newValue = "toReplace";
 
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenAnswer(invocation -> {
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenAnswer(invocation -> {
       BiFunction<Number, String, String> function = asBiFunction(invocation);
       function.apply((Number)invocation.getArguments()[0], cachedValue);
       return null;
@@ -359,7 +359,7 @@ public class EhcacheLoaderWriterTest {
   public void testThreeArgReplaceThrowsOnCompute() throws Exception {
     final String oldValue = "cached";
     final String newValue = "toReplace";
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenThrow(new StoreAccessException("boom"));
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenThrow(new StoreAccessException("boom"));
 
     assertThat(cache.replace(1, oldValue, newValue), is(false));
     verify(cache.getCacheLoaderWriter(), never()).write(1, newValue);
@@ -368,7 +368,7 @@ public class EhcacheLoaderWriterTest {
 
   @Test(expected=CacheWritingException.class)
   public void testThreeArgReplaceThrowsOnWrite() throws Exception {
-    when(store.compute(any(Number.class), anyBiFunction(), anySupplier())).thenAnswer(invocation -> {
+    when(store.compute(any(Number.class), anyBiFunction(), anySupplier(), anySupplier())).thenAnswer(invocation -> {
       BiFunction<Number, String, String> function = asBiFunction(invocation);
       final String applied;
       try {

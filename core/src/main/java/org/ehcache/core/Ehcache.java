@@ -191,30 +191,19 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
             getObserver.end(GetOutcome.HIT);
           }
 
-          V newValue = computeFunction.apply(mappedKey, mappedValue);
+          return computeFunction.apply(mappedKey, mappedValue);
 
-          if (newValue == mappedValue) {
-            if (! replaceEqual.get()) {
-              return mappedValue;
-            }
-          }
-
-          if (newValueAlreadyExpired(mappedKey, mappedValue, newValue)) {
-            return null;
-          }
-
-          if (withStatsAndEvents.get()) {
-            if (newValue == null) {
-              removeObserver.end(RemoveOutcome.SUCCESS);
-            } else {
-              putObserver.end(PutOutcome.PUT);
-            }
-          }
-
-          return newValue;
         };
 
-        store.compute(key, fn, replaceEqual);
+        ValueHolder<V> compute = store.compute(key, fn, replaceEqual, invokeWriter);
+        V newValue = compute == null ? null : compute.get();
+        if (withStatsAndEvents.get()) {
+          if (newValue == null) {
+            removeObserver.end(RemoveOutcome.SUCCESS);
+          } else {
+            putObserver.end(PutOutcome.PUT);
+          }
+        }
       } catch (StoreAccessException e) {
         throw new RuntimeException(e);
       }

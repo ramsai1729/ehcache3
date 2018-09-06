@@ -217,20 +217,16 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
       getObserver.begin();
       removeObserver.begin();
 
-      final AtomicReference<V> existingValue = new AtomicReference<>();
+      ValueHolder<V> existingValue;
       try {
-        store.getAndCompute(key, (mappedKey, mappedValue) -> {
-          existingValue.set(mappedValue);
-
-          return null;
-        });
+        existingValue = store.getAndCompute(key, (mappedKey, mappedValue) -> null);
       } catch (StoreAccessException e) {
         getObserver.end(org.ehcache.core.statistics.CacheOperationOutcomes.GetOutcome.FAILURE);
         removeObserver.end(RemoveOutcome.FAILURE);
         throw new RuntimeException(e);
       }
 
-      V returnValue = existingValue.get();
+      V returnValue = existingValue == null ? null : existingValue.get();
       if (returnValue != null) {
         getObserver.end(org.ehcache.core.statistics.CacheOperationOutcomes.GetOutcome.HIT);
         removeObserver.end(RemoveOutcome.SUCCESS);
@@ -245,14 +241,13 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
       getObserver.begin();
       putObserver.begin();
 
-      final AtomicReference<V> existingValue = new AtomicReference<>();
+      ValueHolder<V> existingValue;
       try {
-        store.getAndCompute(key, (mappedKey, mappedValue) -> {
-          existingValue.set(mappedValue);
+        existingValue = store.getAndCompute(key, (mappedKey, mappedValue) -> {
 
-          if (newValueAlreadyExpired(mappedKey, mappedValue, value)) {
-            return null;
-          }
+//          if (newValueAlreadyExpired(mappedKey, mappedValue, value)) {
+//            return null;
+//          }
 
           return value;
         });
@@ -262,7 +257,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
         throw new RuntimeException(e);
       }
 
-      V returnValue = existingValue.get();
+      V returnValue = existingValue == null ? null : existingValue.get();
       if (returnValue != null) {
         getObserver.end(org.ehcache.core.statistics.CacheOperationOutcomes.GetOutcome.HIT);
       } else {

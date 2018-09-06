@@ -268,12 +268,32 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
 
   @Override
   public ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException {
-    return delegate.getAndCompute(key, mappingFunction);
+    return delegate.getAndCompute(key, (mappedKey, mappedValue) -> {
+      V newValue = mappingFunction.apply(mappedKey, mappedValue);
+      if (newValue == null) {
+        try {
+          cacheLoaderWriter.delete(mappedKey);
+        } catch (Exception e) {
+          throw new StorePassThroughException(newCacheWritingException(e));
+        }
+        return null;
+      } else {
+        try {
+          cacheLoaderWriter.write(mappedKey, newValue);
+        } catch (Exception e) {
+          throw new StorePassThroughException(newCacheWritingException(e));
+        }
+        if (newValueAlreadyExpired(LOG, expiry, mappedKey, mappedValue, newValue)) {
+          return null;
+        }
+        return newValue;
+      }
+    });
   }
 
   @Override
   public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual) throws StoreAccessException {
-    throw new UnsupportedOperationException("Not supported");
+    return delegate.compute(key, mappingFunction, replaceEqual);
   }
 
   @Override
@@ -392,6 +412,10 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
     // we are not expecting failures and these two maps are only used in case of failures. So keep them small
     Map<K, V> successes = new HashMap<>(1);
     Map<K, Exception> failures = new HashMap<>(1);
+
+    if (!(mappingFunction instanceof Ehcache.GetAllFunction)) {
+      return delegate.bulkComputeIfAbsent(keys, mappingFunction);
+    }
 
     Function<Iterable<? extends K>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> computeFunction =
             keys1 -> {

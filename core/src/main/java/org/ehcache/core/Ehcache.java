@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -56,6 +55,8 @@ import org.slf4j.Logger;
  */
 public class Ehcache<K, V> extends EhcacheBase<K, V> {
 
+  private final CacheLoaderWriter<? super K, V> cacheLoaderWriter;
+
   /**
    * Creates a new {@code Ehcache} based on the provided parameters.
    *
@@ -72,6 +73,13 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
   Ehcache(EhcacheRuntimeConfiguration<K, V> runtimeConfiguration, Store<K, V> store, ResilienceStrategy<K, V> resilienceStrategy,
           CacheEventDispatcher<K, V> eventDispatcher, Logger logger, StatusTransitioner statusTransitioner) {
     super(runtimeConfiguration, store, resilienceStrategy, eventDispatcher, logger, statusTransitioner);
+    this.cacheLoaderWriter = null;
+  }
+
+  public Ehcache(CacheConfiguration<K, V> configuration, final Store<K, V> store, ResilienceStrategy<K, V> resilienceStrategy,
+                 CacheEventDispatcher<K, V> eventDispatcher, Logger logger, CacheLoaderWriter<? super K, V> cacheLoaderWriter) {
+    super(new EhcacheRuntimeConfiguration<>(configuration), store, resilienceStrategy, eventDispatcher, logger, new StatusTransitioner(logger));
+    this.cacheLoaderWriter = cacheLoaderWriter;
   }
 
   /**
@@ -163,7 +171,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
    */
   @Override
   public CacheLoaderWriter<? super K, V> getCacheLoaderWriter() {
-    return null;
+    return this.cacheLoaderWriter;
   }
 
   private final class Jsr107CacheImpl extends Jsr107CacheBase {
@@ -243,14 +251,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
 
       ValueHolder<V> existingValue;
       try {
-        existingValue = store.getAndCompute(key, (mappedKey, mappedValue) -> {
-
-//          if (newValueAlreadyExpired(mappedKey, mappedValue, value)) {
-//            return null;
-//          }
-
-          return value;
-        });
+        existingValue = store.getAndCompute(key, (mappedKey, mappedValue) -> value);
       } catch (StoreAccessException e) {
         getObserver.end(org.ehcache.core.statistics.CacheOperationOutcomes.GetOutcome.FAILURE);
         putObserver.end(PutOutcome.FAILURE);

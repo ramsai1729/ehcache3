@@ -308,98 +308,107 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
     Map<K, Exception> failures = new HashMap<>(1);
 
     if(remappingFunction instanceof Ehcache.PutAllFunction) {
-
-      // Copy all entries to write into a Map
-      Ehcache.PutAllFunction<K, V> putAllFunction = (Ehcache.PutAllFunction<K, V>) remappingFunction;
-      Map<K, V> entriesToRemap = CollectionUtil.copyMapButFailOnNull(putAllFunction.getEntriesToRemap());
-
-      int[] actualPutCount = {0};
-
-      // The getAndCompute function that will return the keys to their NEW values, taking the keys to their old values as input;
-      // but this could happen in batches, i.e. not necessary containing all of the entries of the Iterable passed to this method
-      Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> computeFunction =
-              entries1 -> {
-                // If we have a writer, first write this batch
-                cacheLoaderWriterWriteAllCall(entries1, entriesToRemap, successes, failures);
-
-                int size = CollectionUtil.findBestCollectionSize(entries1, 1);
-                Map<K, V> mutations = new LinkedHashMap<>(size);
-
-                // then record we handled these mappings
-                for (Map.Entry<? extends K, ? extends V> entry : entries1) {
-                  K key = entry.getKey();
-                  V existingValue = entry.getValue();
-                  V newValue = entriesToRemap.remove(key);
-
-                  if (newValueAlreadyExpired(LOG, expiry, key, existingValue, newValue)) {
-                    mutations.put(key, null);
-                  } else if (successes.contains(key)) {
-                    ++actualPutCount[0];
-                    mutations.put(key, newValue);
-
-                  } else {
-                    mutations.put(key, existingValue);
-                  }
-                }
-
-                // Finally return the values to be installed in the Cache's Store
-                return mutations.entrySet();
-              };
-
-      Map<K, ValueHolder<V>> computedMap = delegate.bulkCompute(putAllFunction.getEntriesToRemap().keySet(), computeFunction);
-//    addBulkMethodEntriesCount(BulkOps.PUT_ALL, actualPutCount[0]);
-      if (!failures.isEmpty()) {
-        throw new BulkCacheWritingException(failures, successes);
-      }
-      return computedMap;
+      return getkValueHolderMap((Ehcache.PutAllFunction<K, V>) remappingFunction, successes, failures);
+    } else if (remappingFunction instanceof Ehcache.RemoveAllFunction) {
+      return getkValueHolderMap(keys);
     } else {
-      // we are not expecting failures and these two maps are only used in case of failures. So keep them small
-      Set<K> deleteSuccesses = new HashSet<>(1);
-      Map<K, Exception> deleteFailures = new HashMap<>(1);
+      return delegate.bulkCompute(keys, remappingFunction);
+    }
+  }
 
-      Map<K, ? extends V> entriesToRemove = new HashMap<>(keys.size());
-      for (K key: keys) {
-        entriesToRemove.put(key, null);
-      }
+  private Map<K, ValueHolder<V>> getkValueHolderMap(Set<? extends K> keys) throws StoreAccessException {
+    // we are not expecting failures and these two maps are only used in case of failures. So keep them small
+    Set<K> deleteSuccesses = new HashSet<>(1);
+    Map<K, Exception> deleteFailures = new HashMap<>(1);
 
-      int[] actualRemoveCount = { 0 };
+    Map<K, ? extends V> entriesToRemove = new HashMap<>(keys.size());
+    for (K key: keys) {
+      entriesToRemove.put(key, null);
+    }
 
-      Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> removalFunction =
-              entries -> {
-                Set<K> unknowns = cacheLoaderWriterDeleteAllCall(entries, entriesToRemove, deleteSuccesses, deleteFailures);
+    int[] actualRemoveCount = { 0 };
 
-                int size = CollectionUtil.findBestCollectionSize(entries, 1);
-                Map<K, V> results = new LinkedHashMap<>(size);
+    Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> removalFunction =
+            entries -> {
+              Set<K> unknowns = cacheLoaderWriterDeleteAllCall(entries, entriesToRemove, deleteSuccesses, deleteFailures);
 
-                for (Map.Entry<? extends K, ? extends V> entry : entries) {
-                  K key = entry.getKey();
-                  V existingValue = entry.getValue();
+              int size = CollectionUtil.findBestCollectionSize(entries, 1);
+              Map<K, V> results = new LinkedHashMap<>(size);
 
-                  if (deleteSuccesses.contains(key)) {
-                    if (existingValue != null) {
-                      ++actualRemoveCount[0];
-                    }
+              for (Map.Entry<? extends K, ? extends V> entry : entries) {
+                K key = entry.getKey();
+                V existingValue = entry.getValue();
+
+                if (deleteSuccesses.contains(key)) {
+                  if (existingValue != null) {
+                    ++actualRemoveCount[0];
+                  }
+                  results.put(key, null);
+                  entriesToRemove.remove(key);
+                } else {
+                  if (unknowns.contains(key)) {
                     results.put(key, null);
-                    entriesToRemove.remove(key);
                   } else {
-                    if (unknowns.contains(key)) {
-                      results.put(key, null);
-                    } else {
-                      results.put(key, existingValue);
-                    }
+                    results.put(key, existingValue);
                   }
                 }
+              }
 
-                return results.entrySet();
-              };
+              return results.entrySet();
+            };
 
-      Map<K, ValueHolder<V>> map = delegate.bulkCompute(keys, removalFunction);
-      if (!deleteFailures.isEmpty()) {
-        throw new BulkCacheWritingException(deleteFailures, deleteSuccesses);
-      } else {
-        return map;
-      }
+    Map<K, ValueHolder<V>> map = delegate.bulkCompute(keys, removalFunction);
+    if (!deleteFailures.isEmpty()) {
+      throw new BulkCacheWritingException(deleteFailures, deleteSuccesses);
+    } else {
+      return map;
     }
+  }
+
+  private Map<K, ValueHolder<V>> getkValueHolderMap(Ehcache.PutAllFunction<K, V> remappingFunction, Set<K> successes, Map<K, Exception> failures) throws StoreAccessException {
+    // Copy all entries to write into a Map
+    Ehcache.PutAllFunction<K, V> putAllFunction = remappingFunction;
+    Map<K, V> entriesToRemap = CollectionUtil.copyMapButFailOnNull(putAllFunction.getEntriesToRemap());
+
+    int[] actualPutCount = {0};
+
+    // The getAndCompute function that will return the keys to their NEW values, taking the keys to their old values as input;
+    // but this could happen in batches, i.e. not necessary containing all of the entries of the Iterable passed to this method
+    Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> computeFunction =
+            entries1 -> {
+              // If we have a writer, first write this batch
+              cacheLoaderWriterWriteAllCall(entries1, entriesToRemap, successes, failures);
+
+              int size = CollectionUtil.findBestCollectionSize(entries1, 1);
+              Map<K, V> mutations = new LinkedHashMap<>(size);
+
+              // then record we handled these mappings
+              for (Map.Entry<? extends K, ? extends V> entry : entries1) {
+                K key = entry.getKey();
+                V existingValue = entry.getValue();
+                V newValue = entriesToRemap.remove(key);
+
+                if (newValueAlreadyExpired(LOG, expiry, key, existingValue, newValue)) {
+                  mutations.put(key, null);
+                } else if (successes.contains(key)) {
+                  ++actualPutCount[0];
+                  mutations.put(key, newValue);
+
+                } else {
+                  mutations.put(key, existingValue);
+                }
+              }
+
+              // Finally return the values to be installed in the Cache's Store
+              return mutations.entrySet();
+            };
+
+    Map<K, ValueHolder<V>> computedMap = delegate.bulkCompute(putAllFunction.getEntriesToRemap().keySet(), computeFunction);
+//    addBulkMethodEntriesCount(BulkOps.PUT_ALL, actualPutCount[0]);
+    if (!failures.isEmpty()) {
+      throw new BulkCacheWritingException(failures, successes);
+    }
+    return computedMap;
   }
 
   @Override

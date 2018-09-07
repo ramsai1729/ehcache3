@@ -67,13 +67,13 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
    */
   public Ehcache(CacheConfiguration<K, V> configuration, final Store<K, V> store, ResilienceStrategy<K, V> resilienceStrategy,
                  CacheEventDispatcher<K, V> eventDispatcher, Logger logger) {
-    this(new EhcacheRuntimeConfiguration<>(configuration), store, resilienceStrategy, eventDispatcher, logger, new StatusTransitioner(logger));
+    this(new EhcacheRuntimeConfiguration<>(configuration), store, resilienceStrategy, eventDispatcher, logger, new StatusTransitioner(logger), null);
   }
 
   Ehcache(EhcacheRuntimeConfiguration<K, V> runtimeConfiguration, Store<K, V> store, ResilienceStrategy<K, V> resilienceStrategy,
-          CacheEventDispatcher<K, V> eventDispatcher, Logger logger, StatusTransitioner statusTransitioner) {
+          CacheEventDispatcher<K, V> eventDispatcher, Logger logger, StatusTransitioner statusTransitioner, CacheLoaderWriter<? super K, V> cacheLoaderWriter) {
     super(runtimeConfiguration, store, resilienceStrategy, eventDispatcher, logger, statusTransitioner);
-    this.cacheLoaderWriter = null;
+    this.cacheLoaderWriter = cacheLoaderWriter;
   }
 
   public Ehcache(CacheConfiguration<K, V> configuration, final Store<K, V> store, ResilienceStrategy<K, V> resilienceStrategy,

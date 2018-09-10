@@ -421,7 +421,6 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
             };
 
     Map<K, ValueHolder<V>> computedMap = delegate.bulkCompute(putAllFunction.getEntriesToRemap().keySet(), computeFunction);
-//    addBulkMethodEntriesCount(BulkOps.PUT_ALL, actualPutCount[0]);
     if (!failures.isEmpty()) {
       throw new BulkCacheWritingException(failures, successes);
     }
@@ -480,21 +479,7 @@ public class BaseLoaderWriterStore<K, V> implements Store<K, V> {
     Map<K, V> result = new HashMap<>();
     Map<K, Store.ValueHolder<V>> computedMap = delegate.bulkComputeIfAbsent(keys, computeFunction);
 
-//    int hits = 0;
-//    int keyCount = 0;
-//    for (Map.Entry<K, Store.ValueHolder<V>> entry : computedMap.entrySet()) {
-//      keyCount++;
-//      if (entry.getValue() != null) {
-//        result.put(entry.getKey(), entry.getValue().get());
-//        hits++;
-//      } else if (includeNulls && failures.isEmpty()) {
-//        result.put(entry.getKey(), null);
-//      }
-//    }
-
-//    addBulkMethodEntriesCount(BulkOps.GET_ALL_HITS, hits);
     if (failures.isEmpty()) {
-//      addBulkMethodEntriesCount(BulkOps.GET_ALL_MISS, keyCount - hits);
       return computedMap;
     } else {
       successes.putAll(result);

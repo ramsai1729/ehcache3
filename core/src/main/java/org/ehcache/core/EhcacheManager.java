@@ -368,7 +368,7 @@ public class EhcacheManager implements PersistentCacheManager, InternalCacheMana
     ResilienceStrategy<K, V> resilienceStrategy;
     if (decorator == null) {
       resilienceStrategy = resilienceProvider.createResilienceStrategy(alias, config, new DefaultRecoveryStore<>(store));
-    } else { //TODO :  fix this
+    } else {
       resilienceStrategy = resilienceProvider.createResilienceStrategy(alias, config, new DefaultRecoveryStore<>(store), decorator);
     }
     InternalCache<K, V> cache = new Ehcache<>(config, store, resilienceStrategy, evtService, LoggerFactory.getLogger(Ehcache.class + "-" + alias), decorator);

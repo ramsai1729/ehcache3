@@ -581,10 +581,10 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     private <K, V> ClusteredStore<K, V> createStoreInternal(Configuration<K, V> storeConfig, Object[] serviceConfigs) {
       connectLock.lock();
       try {
-        CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
-        if (loaderWriterConfiguration != null) {
-          throw new IllegalStateException("CacheLoaderWriter is not supported with clustered tiers");
-        }
+//        CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
+//        if (loaderWriterConfiguration != null) {
+//          throw new IllegalStateException("CacheLoaderWriter is not supported with clustered tiers");
+//        }
 
         CacheEventListenerConfiguration eventListenerConfiguration = findSingletonAmongst(CacheEventListenerConfiguration.class, serviceConfigs);
         if (eventListenerConfiguration != null) {

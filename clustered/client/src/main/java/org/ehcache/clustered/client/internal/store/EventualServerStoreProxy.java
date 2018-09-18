@@ -39,6 +39,21 @@ public class EventualServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
+  public void lock(long hash) throws TimeoutException {
+    delegate.lock(hash);
+  }
+
+  @Override
+  public void unlock(long hash) throws TimeoutException {
+    delegate.unlock(hash);
+  }
+
+  @Override
+  public void appendAndUnlock(long hash, ByteBuffer payload) throws TimeoutException {
+    delegate.appendAndUnlock(hash, payload);
+  }
+
+  @Override
   public Chain get(long key) throws TimeoutException {
     return delegate.get(key);
   }

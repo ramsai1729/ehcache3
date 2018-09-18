@@ -103,12 +103,12 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
   static final int DEFAULT_CHAIN_COMPACTION_THRESHOLD = 4;
 
   private final int chainCompactionLimit;
-  private final OperationsCodec<K, V> codec;
+  protected final OperationsCodec<K, V> codec;
   private final ChainResolver<K, V> resolver;
 
-  private final TimeSource timeSource;
+  protected final TimeSource timeSource;
 
-  private volatile ServerStoreProxy storeProxy;
+  protected volatile ServerStoreProxy storeProxy;
   private volatile InvalidationValve invalidationValve;
 
   private final OperationObserver<StoreOperationOutcomes.GetOutcome> getObserver;
@@ -123,7 +123,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
   private final OperationObserver<AuthoritativeTierOperationOutcomes.GetAndFaultOutcome> getAndFaultObserver;
 
 
-  private ClusteredStore(Configuration<K, V> config, OperationsCodec<K, V> codec, ChainResolver<K, V> resolver, TimeSource timeSource) {
+  protected ClusteredStore(Configuration<K, V> config, OperationsCodec<K, V> codec, ChainResolver<K, V> resolver, TimeSource timeSource) {
     super(config);
 
     this.chainCompactionLimit = Integer.getInteger(CHAIN_COMPACTION_THRESHOLD_PROP, DEFAULT_CHAIN_COMPACTION_THRESHOLD);
@@ -174,7 +174,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
   }
 
-  private ValueHolder<V> getInternal(K key) throws StoreAccessException, TimeoutException {
+  protected ValueHolder<V> getInternal(K key) throws StoreAccessException, TimeoutException {
     ClusteredValueHolder<V> holder = null;
     try {
       Chain chain = storeProxy.get(extractLongKey(key));
@@ -203,7 +203,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     return holder;
   }
 
-  private long extractLongKey(K key) {
+  protected long extractLongKey(K key) {
     return HashUtils.intHashToLong(key.hashCode());
   }
 
@@ -233,7 +233,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     return status;
   }
 
-  private PutStatus silentPut(final K key, final V value) throws StoreAccessException {
+  protected PutStatus silentPut(final K key, final V value) throws StoreAccessException {
     try {
       PutOperation<K, V> operation = new PutOperation<>(key, value, timeSource.getTimeMillis());
       ByteBuffer payload = codec.encode(operation);
@@ -285,7 +285,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
   }
 
-  private boolean silentRemove(final K key) throws StoreAccessException {
+  protected boolean silentRemove(final K key) throws StoreAccessException {
     try {
       RemoveOperation<K, V> operation = new RemoveOperation<>(key, timeSource.getTimeMillis());
       ByteBuffer payload = codec.encode(operation);
@@ -581,10 +581,6 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     private <K, V> ClusteredStore<K, V> createStoreInternal(Configuration<K, V> storeConfig, Object[] serviceConfigs) {
       connectLock.lock();
       try {
-//        CacheLoaderWriterConfiguration loaderWriterConfiguration = findSingletonAmongst(DefaultCacheLoaderWriterConfiguration.class, serviceConfigs);
-//        if (loaderWriterConfiguration != null) {
-//          throw new IllegalStateException("CacheLoaderWriter is not supported with clustered tiers");
-//        }
 
         CacheEventListenerConfiguration eventListenerConfiguration = findSingletonAmongst(CacheEventListenerConfiguration.class, serviceConfigs);
         if (eventListenerConfiguration != null) {

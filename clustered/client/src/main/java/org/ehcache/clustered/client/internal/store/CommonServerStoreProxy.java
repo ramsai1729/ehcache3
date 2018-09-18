@@ -111,6 +111,21 @@ class CommonServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
+  public void lock(long hash) throws TimeoutException {
+
+  }
+
+  @Override
+  public void unlock(long hash) throws TimeoutException {
+
+  }
+
+  @Override
+  public void appendAndUnlock(long hash, ByteBuffer payload) throws TimeoutException {
+
+  }
+
+  @Override
   public Chain get(long key) throws TimeoutException {
     EhcacheEntityResponse response;
     try {

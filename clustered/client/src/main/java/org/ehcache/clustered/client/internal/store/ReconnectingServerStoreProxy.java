@@ -52,13 +52,37 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
+  public void lock(long hash) throws TimeoutException {
+    onStoreProxy(serverStoreProxy -> {
+      serverStoreProxy.lock(hash);
+      return null;
+    });
+  }
+
+  @Override
+  public void unlock(long hash) throws TimeoutException {
+    onStoreProxy(serverStoreProxy -> {
+      serverStoreProxy.unlock(hash);
+      return null;
+    });
+  }
+
+  @Override
+  public void appendAndUnlock(long hash, ByteBuffer payload) throws TimeoutException {
+    onStoreProxy(serverStoreProxy -> {
+      serverStoreProxy.appendAndUnlock(hash, payload);
+      return null;
+    });
+  }
+
+  @Override
   public Chain get(long key) throws TimeoutException {
     return onStoreProxy(serverStoreProxy -> serverStoreProxy.get(key));
   }
 
   @Override
   public void append(long key, ByteBuffer payLoad) throws TimeoutException {
-    onStoreProxy((TimeoutExceptionFunction<ServerStoreProxy, Void>) serverStoreProxy -> {
+    onStoreProxy(serverStoreProxy -> {
       serverStoreProxy.append(key, payLoad);
       return null;
     });
@@ -72,7 +96,7 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
   @Override
   public void replaceAtHead(long key, Chain expect, Chain update) {
     try {
-      onStoreProxy((TimeoutExceptionFunction<ServerStoreProxy, Void>)serverStoreProxy -> {
+      onStoreProxy(serverStoreProxy -> {
         serverStoreProxy.replaceAtHead(key, expect, update);
         return null;
       });
@@ -83,7 +107,7 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
 
   @Override
   public void clear() throws TimeoutException {
-    onStoreProxy((TimeoutExceptionFunction<ServerStoreProxy, Void>) serverStoreProxy -> {
+    onStoreProxy(serverStoreProxy -> {
       serverStoreProxy.clear();
       return null;
     });
@@ -129,6 +153,21 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
 
     @Override
     public void close() {
+      throw new ReconnectInProgressException();
+    }
+
+    @Override
+    public void lock(long hash) {
+      throw new ReconnectInProgressException();
+    }
+
+    @Override
+    public void unlock(long hash) {
+      throw new ReconnectInProgressException();
+    }
+
+    @Override
+    public void appendAndUnlock(long hash, ByteBuffer payload) {
       throw new ReconnectInProgressException();
     }
 

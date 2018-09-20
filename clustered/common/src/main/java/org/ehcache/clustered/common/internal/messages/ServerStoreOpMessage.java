@@ -166,5 +166,31 @@ public abstract class ServerStoreOpMessage extends EhcacheOperationMessage {
     }
   }
 
+  public static class LockMessage extends ServerStoreOpMessage {
+
+    private final Chain chain;
+
+    public LockMessage(Chain chain) {
+      this.chain = chain;
+    }
+
+    public Chain getChain() {
+      return chain;
+    }
+
+    @Override
+    public EhcacheMessageType getMessageType() {
+      return EhcacheMessageType.LOCK;
+    }
+  }
+
+  public static class UnlockMessage extends ServerStoreOpMessage {
+
+    @Override
+    public EhcacheMessageType getMessageType() {
+      return EhcacheMessageType.UNLOCK;
+    }
+  }
+
 }
 

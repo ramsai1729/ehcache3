@@ -52,25 +52,14 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
-  public void lock(long hash) throws TimeoutException {
-    onStoreProxy(serverStoreProxy -> {
-      serverStoreProxy.lock(hash);
-      return null;
-    });
+  public Chain lock(long hash) throws TimeoutException {
+    return onStoreProxy(serverStoreProxy -> serverStoreProxy.lock(hash));
   }
 
   @Override
   public void unlock(long hash) throws TimeoutException {
     onStoreProxy(serverStoreProxy -> {
       serverStoreProxy.unlock(hash);
-      return null;
-    });
-  }
-
-  @Override
-  public void appendAndUnlock(long hash, ByteBuffer payload) throws TimeoutException {
-    onStoreProxy(serverStoreProxy -> {
-      serverStoreProxy.appendAndUnlock(hash, payload);
       return null;
     });
   }
@@ -157,17 +146,12 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
     }
 
     @Override
-    public void lock(long hash) {
+    public Chain lock(long hash) {
       throw new ReconnectInProgressException();
     }
 
     @Override
     public void unlock(long hash) {
-      throw new ReconnectInProgressException();
-    }
-
-    @Override
-    public void appendAndUnlock(long hash, ByteBuffer payload) {
       throw new ReconnectInProgressException();
     }
 

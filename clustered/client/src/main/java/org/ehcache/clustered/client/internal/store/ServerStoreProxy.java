@@ -18,7 +18,6 @@ package org.ehcache.clustered.client.internal.store;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.ServerStore;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -61,20 +60,12 @@ public interface ServerStoreProxy extends ServerStore {
    *
    * @param hash
    */
-  void lock(long hash) throws TimeoutException;
+  Chain lock(long hash) throws TimeoutException;
 
   /**
    *
    * @param hash
    */
   void unlock(long hash) throws TimeoutException;
-
-  /**
-   *
-   * @param hash
-   * @param payload
-   * @throws TimeoutException
-   */
-  void appendAndUnlock(long hash, ByteBuffer payload) throws TimeoutException;
 
 }

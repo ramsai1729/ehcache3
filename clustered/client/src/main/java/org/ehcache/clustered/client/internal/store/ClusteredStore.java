@@ -104,7 +104,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
 
   private final int chainCompactionLimit;
   protected final OperationsCodec<K, V> codec;
-  private final ChainResolver<K, V> resolver;
+  protected final ChainResolver<K, V> resolver;
 
   protected final TimeSource timeSource;
 
@@ -248,6 +248,17 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
   @Override
   public ValueHolder<V> putIfAbsent(final K key, final V value, Consumer<Boolean> put) throws StoreAccessException {
     putIfAbsentObserver.begin();
+    V result = silentputIfAbsent(key, value);
+    if(result == null) {
+      putIfAbsentObserver.end(StoreOperationOutcomes.PutIfAbsentOutcome.PUT);
+      return null;
+    } else {
+      putIfAbsentObserver.end(StoreOperationOutcomes.PutIfAbsentOutcome.HIT);
+      return new ClusteredValueHolder<>(result);
+    }
+  }
+
+  protected V silentputIfAbsent(K key, V value) throws StoreAccessException {
     try {
       PutIfAbsentOperation<K, V> operation = new PutIfAbsentOperation<>(key, value, timeSource.getTimeMillis());
       ByteBuffer payload = codec.encode(operation);
@@ -261,13 +272,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
       }
 
       Result<K, V> result = resolvedChain.getResolvedResult(key);
-      if(result == null) {
-        putIfAbsentObserver.end(StoreOperationOutcomes.PutIfAbsentOutcome.PUT);
-        return null;
-      } else {
-        putIfAbsentObserver.end(StoreOperationOutcomes.PutIfAbsentOutcome.HIT);
-        return new ClusteredValueHolder<>(result.getValue());
-      }
+      return result == null ? null : result.getValue();
     } catch (Exception re) {
       throw handleException(re);
     }

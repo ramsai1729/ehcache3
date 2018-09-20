@@ -1,0 +1,199 @@
+/*
+ * Copyright Terracotta, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.ehcache.clustered.client.internal.store;
+
+import org.ehcache.clustered.client.internal.store.operations.EternalChainResolver;
+import org.ehcache.clustered.client.internal.store.operations.PutOperation;
+import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
+import org.ehcache.clustered.common.internal.store.Chain;
+import org.ehcache.clustered.common.internal.store.Util;
+import org.ehcache.clustered.loaderWriter.TestCacheLoaderWriter;
+import org.ehcache.core.spi.store.Store;
+import org.ehcache.core.spi.time.TimeSource;
+import org.ehcache.impl.serialization.LongSerializer;
+import org.ehcache.impl.serialization.StringSerializer;
+import org.ehcache.impl.store.HashUtils;
+import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.ArgumentMatchers;
+
+import java.nio.ByteBuffer;
+
+import static org.ehcache.clustered.common.internal.store.Util.EMPTY_CHAIN;
+import static org.hamcrest.Matchers.any;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+public class ClusteredLoaderWriterStoreTest {
+
+  @SuppressWarnings("unchecked")
+  private Store.Configuration<Long, String> configuration = mock(Store.Configuration.class);
+  private OperationsCodec<Long, String> codec = new OperationsCodec<>(new LongSerializer(), new StringSerializer());
+  private EternalChainResolver<Long, String> resolver = new EternalChainResolver<>(codec);
+  private TimeSource timeSource = mock(TimeSource.class);
+
+  @Test
+  public void testGetValueAbsentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    CacheLoaderWriter<Long, String> loaderWriter = new TestCacheLoaderWriter();
+    when(storeProxy.get(eq(1L))).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(store.get(1L), is(nullValue()));
+  }
+
+  @Test
+  public void testGetValuePresentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    loaderWriter.storeMap.put(1L, "one");
+    when(storeProxy.get(eq(1L))).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(store.get(1L).get(), equalTo("one"));
+  }
+
+  @Test
+  public void testGetValuePresentInCache() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    @SuppressWarnings("unchecked")
+    CacheLoaderWriter<Long, String> loaderWriter = mock(CacheLoaderWriter.class);
+    PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
+    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    when(storeProxy.get(anyLong())).thenReturn(toReturn);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(store.get(1L).get(), equalTo("one"));
+    verify(loaderWriter, times(0)).load(anyLong());
+    verifyZeroInteractions(loaderWriter);
+  }
+
+  @Test
+  public void testPut() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(loaderWriter.storeMap.containsKey(1L), is(false));
+    assertThat(store.put(1L, "one"), is(Store.PutStatus.PUT));
+    assertThat(loaderWriter.storeMap.containsKey(1L), is(true));
+  }
+
+  @Test
+  public void testRemoveValueAbsentInCachePresentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    when(storeProxy.lock(anyLong())).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    loaderWriter.storeMap.put(1L, "one");
+    assertThat(store.remove(1L), is(false));
+    assertThat(loaderWriter.storeMap.containsKey(1L), is(false));
+  }
+
+  @Test
+  public void testRemoveValuePresentInCachePresentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
+    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    when(storeProxy.lock(anyLong())).thenReturn(toReturn);
+    when(storeProxy.get(anyLong())).thenReturn(toReturn);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    loaderWriter.storeMap.put(1L, "one");
+    assertThat(store.get(1L).get(), equalTo("one"));
+    assertThat(store.remove(1L), is(true));
+    assertThat(loaderWriter.storeMap.containsKey(1L), is(false));
+  }
+
+  @Test
+  public void testRemoveValueAbsentInCacheAbsentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    @SuppressWarnings("unchecked")
+    CacheLoaderWriter<Long, String> loaderWriter = mock(CacheLoaderWriter.class);
+    when(storeProxy.lock(anyLong())).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(store.remove(1L), is(false));
+    verify(loaderWriter, times(1)).delete(anyLong());
+  }
+
+  @Test
+  public void testPufIfAbsentValueAbsentInCacheAbsentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    when(storeProxy.lock(anyLong())).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    assertThat(loaderWriter.storeMap.isEmpty(), is(true));
+    assertThat(store.putIfAbsent(1L, "one", null), is(nullValue()));
+    assertThat(loaderWriter.storeMap.get(1L), equalTo("one"));
+  }
+
+  @Test
+  public void testPufIfAbsentValueAbsentInCachePresentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    when(storeProxy.lock(anyLong())).thenReturn(EMPTY_CHAIN);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    loaderWriter.storeMap.put(1L, "one");
+    assertThat(store.putIfAbsent(1L, "Again", null).get(), equalTo("one"));
+    verify(storeProxy, times(1)).append(anyLong(), ArgumentMatchers.any(ByteBuffer.class));
+  }
+
+  @Test
+  public void testPufIfAbsentValuePresentInCachePresentInSOR() throws Exception {
+    ServerStoreProxy storeProxy = mock(ServerStoreProxy.class);
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
+    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    when(storeProxy.lock(anyLong())).thenReturn(toReturn);
+    ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
+            timeSource, loaderWriter);
+    loaderWriter.storeMap.put(1L, "one");
+    assertThat(store.putIfAbsent(1L, "Again", null).get(), equalTo("one"));
+    verify(storeProxy, times(0)).append(anyLong(), ArgumentMatchers.any(ByteBuffer.class));
+    assertThat(loaderWriter.storeMap.get(1L), equalTo("one"));
+  }
+
+  @Test
+  public void testRemove2ArgsValueAbsentInCachePresentInSOR() {
+
+  }
+
+  @Test
+  public void testRemove2ArgsValuePresentInCachePresentInSOR() {
+
+  }
+
+  @Test
+  public void testRemove2ArgsValueAbsentInCacheDiffValuePresentInSOR() {
+
+  }
+}

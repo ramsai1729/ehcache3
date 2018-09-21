@@ -56,16 +56,4 @@ public interface ServerStoreProxy extends ServerStore {
    */
   void close();
 
-  /**
-   *
-   * @param hash
-   */
-  Chain lock(long hash) throws TimeoutException;
-
-  /**
-   *
-   * @param hash
-   */
-  void unlock(long hash) throws TimeoutException;
-
 }

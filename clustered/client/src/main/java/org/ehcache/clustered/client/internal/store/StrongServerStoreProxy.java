@@ -197,16 +197,6 @@ public class StrongServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
-  public Chain lock(long hash) throws TimeoutException {
-    return delegate.lock(hash);
-  }
-
-  @Override
-  public void unlock(long hash) throws TimeoutException {
-    delegate.unlock(hash);
-  }
-
-  @Override
   public Chain get(long key) throws TimeoutException {
     return delegate.get(key);
   }

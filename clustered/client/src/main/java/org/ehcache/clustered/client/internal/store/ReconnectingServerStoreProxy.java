@@ -52,19 +52,6 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
   }
 
   @Override
-  public Chain lock(long hash) throws TimeoutException {
-    return onStoreProxy(serverStoreProxy -> serverStoreProxy.lock(hash));
-  }
-
-  @Override
-  public void unlock(long hash) throws TimeoutException {
-    onStoreProxy(serverStoreProxy -> {
-      serverStoreProxy.unlock(hash);
-      return null;
-    });
-  }
-
-  @Override
   public Chain get(long key) throws TimeoutException {
     return onStoreProxy(serverStoreProxy -> serverStoreProxy.get(key));
   }
@@ -142,16 +129,6 @@ public class ReconnectingServerStoreProxy implements ServerStoreProxy {
 
     @Override
     public void close() {
-      throw new ReconnectInProgressException();
-    }
-
-    @Override
-    public Chain lock(long hash) {
-      throw new ReconnectInProgressException();
-    }
-
-    @Override
-    public void unlock(long hash) {
       throw new ReconnectInProgressException();
     }
 

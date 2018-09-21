@@ -13,13 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ehcache.clustered.client.internal.store;
+package org.ehcache.clustered.client.internal.loaderwriter;
 
+import org.ehcache.clustered.client.internal.store.ClusteredStore;
+import org.ehcache.clustered.client.internal.store.ClusteredValueHolder;
+import org.ehcache.clustered.client.internal.store.ResolvedChain;
+import org.ehcache.clustered.client.internal.store.ServerStoreProxy;
+import org.ehcache.clustered.client.internal.store.lock.LockManager;
+import org.ehcache.clustered.client.internal.store.operations.ConditionalRemoveOperation;
+import org.ehcache.clustered.client.internal.store.operations.ConditionalReplaceOperation;
 import org.ehcache.clustered.client.internal.store.operations.EternalChainResolver;
 import org.ehcache.clustered.client.internal.store.operations.Operation;
 import org.ehcache.clustered.client.internal.store.operations.PutIfAbsentOperation;
 import org.ehcache.clustered.client.internal.store.operations.PutOperation;
 import org.ehcache.clustered.client.internal.store.operations.RemoveOperation;
+import org.ehcache.clustered.client.internal.store.operations.ReplaceOperation;
 import org.ehcache.clustered.client.internal.store.operations.Result;
 import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
@@ -41,22 +49,26 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
 
   private final CacheLoaderWriter<? super K, V> cacheLoaderWriter;
   private final boolean useLoaderInAtomics;
+  private final LockManager lock;
 
   ClusteredLoaderWriterStore(Configuration<K, V> config, OperationsCodec<K, V> codec, EternalChainResolver<K, V> resolver, TimeSource timeSource,
-                             CacheLoaderWriter<? super K, V> loaderWriter, boolean useLoaderInAtomics) {
+                             CacheLoaderWriter<? super K, V> loaderWriter, boolean useLoaderInAtomics, LockManager lock) {
     super(config, codec, resolver, timeSource);
     this.cacheLoaderWriter = loaderWriter;
     this.useLoaderInAtomics = useLoaderInAtomics;
+    this.lock = null;
   }
 
   /**
    * For Tests
    */
   ClusteredLoaderWriterStore(Configuration<K, V> config, OperationsCodec<K, V> codec, EternalChainResolver<K, V> resolver,
-                             ServerStoreProxy proxy, TimeSource timeSource, CacheLoaderWriter<? super K, V> loaderWriter) {
+                             ServerStoreProxy proxy, TimeSource timeSource, CacheLoaderWriter<? super K, V> loaderWriter,
+                             LockManager lock) {
     super(config, codec, resolver, proxy, timeSource);
     this.cacheLoaderWriter = loaderWriter;
     this.useLoaderInAtomics = true;
+    this.lock = lock;
   }
 
   @Override
@@ -66,7 +78,7 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
       if (holder == null) {
         long hash = extractLongKey(key);
         boolean unlocked = false;
-        storeProxy.lock(hash);
+        lock.lock(hash);
         try {
           V value = null;
           try {
@@ -82,7 +94,7 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
           return new ClusteredValueHolder<>(value);
         } finally {
           if (!unlocked) {
-            storeProxy.unlock(hash);
+            lock.unlock(hash);
           }
         }
       }
@@ -104,14 +116,14 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
     try {
       long hash = extractLongKey(key);
       boolean unlocked = false;
-      storeProxy.lock(hash);
+      lock.lock(hash);
       try {
         cacheLoaderWriter.write(key, value);
         append(key, value);
         unlocked = true;
       } finally {
         if (!unlocked) {
-          storeProxy.unlock(hash);
+          lock.unlock(hash);
         }
       }
       return PutStatus.PUT;
@@ -127,7 +139,7 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
       boolean unlocked = false;
       RemoveOperation<K, V> operation = new RemoveOperation<>(key, timeSource.getTimeMillis());
       ByteBuffer payLoad = codec.encode(operation);
-      Chain chain = storeProxy.lock(hash);
+      Chain chain = lock.lock(hash);
       try {
         cacheLoaderWriter.delete(key);
         storeProxy.append(hash, payLoad);
@@ -140,7 +152,7 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
         }
       } finally {
         if (!unlocked) {
-          storeProxy.unlock(hash);
+          lock.unlock(hash);
         }
       }
     } catch (Exception e) {
@@ -149,35 +161,31 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
   }
 
   @Override
-  protected V silentputIfAbsent(K key, V value) throws StoreAccessException {
+  protected V silentPutIfAbsent(K key, V value) throws StoreAccessException {
     try {
       long hash = extractLongKey(key);
       boolean unlocked = false;
-      Chain existing = storeProxy.lock(hash);
+      Chain existing = lock.lock(hash);
       try {
         ResolvedChain<K, V> resolvedChain = resolver.resolve(existing, key, timeSource.getTimeMillis());
         Result<K, V> result = resolvedChain.getResolvedResult(key);
         V existingVal = result == null ? null : result.getValue();
-        V incache = loadFromLoaderWriter(key, existingVal);
-        if (incache == null) {
-          cacheLoaderWriter.write(key, value);
+        if (existingVal != null) {
+          return existingVal;
+        } else {
+          existingVal = loadFromLoaderWriter(key);
+          if (existingVal == null) {
+            cacheLoaderWriter.write(key, value);
+          }
           PutIfAbsentOperation<K, V> operation = new PutIfAbsentOperation<>(key, value, timeSource.getTimeMillis());
           ByteBuffer payload = codec.encode(operation);
           storeProxy.append(hash, payload);
           unlocked = true;
-          return null;
+          return existingVal;
         }
-        if (existingVal == null) {
-          PutIfAbsentOperation<K, V> operation = new PutIfAbsentOperation<>(key, incache, timeSource.getTimeMillis());
-          ByteBuffer payload = codec.encode(operation);
-          storeProxy.append(hash, payload);
-          unlocked = true;
-          return incache;
-        }
-        return existingVal;
       } finally {
         if (!unlocked) {
-          storeProxy.unlock(hash);
+          lock.unlock(hash);
         }
       }
     } catch (Exception e) {
@@ -185,25 +193,117 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
     }
   }
 
-  private V loadFromLoaderWriter(K key, V inCache) {
-    if (inCache == null) {
-      if (useLoaderInAtomics) {
-        try {
-          inCache = cacheLoaderWriter.load(key);
-          if (inCache == null) {
+  @Override
+  protected V silentReplace(K key, V value) throws StoreAccessException {
+    try {
+      long hash = extractLongKey(key);
+      boolean unlocked = false;
+      Chain existing = lock.lock(hash);
+      try {
+        ResolvedChain<K, V> resolvedChain = resolver.resolve(existing, key, timeSource.getTimeMillis());
+        Result<K, V> result = resolvedChain.getResolvedResult(key);
+        V existingVal = result == null ? null : result.getValue();
+        if (existingVal != null) {
+          cacheLoaderWriter.write(key, value);
+          ReplaceOperation<K, V> operation = new ReplaceOperation<>(key, value, timeSource.getTimeMillis());
+          ByteBuffer payload = codec.encode(operation);
+          storeProxy.append(hash, payload);
+          unlocked = true;
+          return existingVal;
+        } else {
+          V inCache = loadFromLoaderWriter(key);
+          if (inCache != null) {
+            cacheLoaderWriter.write(key, value);
+            ReplaceOperation<K, V> operation = new ReplaceOperation<>(key, value, timeSource.getTimeMillis());
+            ByteBuffer payload = codec.encode(operation);
+            storeProxy.append(hash, payload);
+            unlocked = true;
+            return inCache;
+          } else {
             return null;
           }
-        } catch (Exception e) {
-          throw new StorePassThroughException(newCacheLoadingException(e));
+        }
+      } finally {
+        if (!unlocked) {
+          lock.unlock(hash);
         }
       }
+    } catch (Exception e) {
+      throw handleException(e);
     }
-    return inCache;
   }
 
-  private Chain getVirtualChain(Chain original, ByteBuffer payLoad) {
-    ChainBuilder chainBuilder = new ChainBuilder(original);
-    chainBuilder = chainBuilder.add(payLoad);
-    return chainBuilder.build();
+  @Override
+  protected V silentRemove(K key, V value) throws StoreAccessException {
+    try {
+      long hash = extractLongKey(key);
+      boolean unlocked = false;
+      Chain existing = lock.lock(hash);
+      try {
+        ResolvedChain<K, V> resolvedChain = resolver.resolve(existing, key, timeSource.getTimeMillis());
+        Result<K, V> result = resolvedChain.getResolvedResult(key);
+        V existingVal = result == null ? null : result.getValue();
+        if (existingVal == null) {
+          existingVal = loadFromLoaderWriter(key);
+        }
+        if (value.equals(existingVal)) {
+          cacheLoaderWriter.delete(key);
+          ConditionalRemoveOperation<K, V> operation = new ConditionalRemoveOperation<>(key, value, timeSource.getTimeMillis());
+          ByteBuffer payLoad = codec.encode(operation);
+          storeProxy.append(hash, payLoad);
+          unlocked = true;
+        }
+        return existingVal;
+      } finally {
+        if (!unlocked) {
+          lock.unlock(hash);
+        }
+      }
+    } catch (Exception e) {
+      throw handleException(e);
+    }
   }
+
+  @Override
+  protected V silentReplace(K key, V oldValue, V newValue) throws StoreAccessException {
+    try {
+      long hash = extractLongKey(key);
+      boolean unlocked = false;
+      Chain existing = lock.lock(hash);
+      try {
+        ResolvedChain<K, V> resolvedChain = resolver.resolve(existing, key, timeSource.getTimeMillis());
+        Result<K, V> result = resolvedChain.getResolvedResult(key);
+        V existingVal = result == null ? null : result.getValue();
+        if (existingVal == null) {
+          existingVal = loadFromLoaderWriter(key);
+        }
+        if (oldValue.equals(existingVal)) {
+          cacheLoaderWriter.write(key, newValue);
+          ConditionalReplaceOperation<K, V> operation = new ConditionalReplaceOperation<>(key, oldValue, newValue, timeSource.getTimeMillis());
+          ByteBuffer payLoad = codec.encode(operation);
+          storeProxy.append(hash, payLoad);
+          unlocked = true;
+        }
+        return existingVal;
+      } finally {
+        if (!unlocked) {
+          lock.unlock(hash);
+        }
+      }
+    } catch (Exception e) {
+      throw handleException(e);
+    }
+  }
+
+  private V loadFromLoaderWriter(K key) {
+    if (useLoaderInAtomics) {
+      try {
+        return cacheLoaderWriter.load(key);
+      } catch (Exception e) {
+        throw new StorePassThroughException(newCacheLoadingException(e));
+      }
+    }
+    return null;
+  }
+
 }

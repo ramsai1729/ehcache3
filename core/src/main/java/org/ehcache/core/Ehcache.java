@@ -51,7 +51,6 @@ import org.slf4j.Logger;
  * {@code Ehcache} users should not have to depend on this type but rely exclusively on the api types in package
  * {@code org.ehcache}.
  *
- * @see EhcacheWithLoaderWriter
  */
 public class Ehcache<K, V> extends EhcacheBase<K, V> {
 

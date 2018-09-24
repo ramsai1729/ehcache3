@@ -17,6 +17,7 @@ package org.ehcache.clustered.server.store;
 
 import org.terracotta.entity.ClientDescriptor;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class LockManagerImpl implements ServerLockManager {
 
   @Override
   public void sweepLocksForClient(ClientDescriptor client) {
-    Set<Map.Entry<Long, ClientDescriptor>> entries = new HashSet<>(blockedKeys.entrySet());
+    Set<Map.Entry<Long, ClientDescriptor>> entries = new HashSet<>(Collections.unmodifiableSet(blockedKeys.entrySet()));
     entries.forEach(entry -> {
       if (entry.getValue().equals(client)) {
         blockedKeys.remove(entry.getKey());

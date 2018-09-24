@@ -38,6 +38,7 @@ import java.net.URI;
 
 import static org.ehcache.clustered.client.config.builders.ClusteringServiceConfigurationBuilder.cluster;
 import static org.ehcache.config.builders.CacheConfigurationBuilder.*;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 public class BasicClusteredLoaderWriterTest {
@@ -64,7 +65,6 @@ public class BasicClusteredLoaderWriterTest {
     CacheConfiguration<Long, String>  cacheConfiguration = newCacheConfigurationBuilder(Long.class, String.class,
             ResourcePoolsBuilder
                     .newResourcePoolsBuilder()
-//                    .heap(100, EntryUnit.ENTRIES))
                     .with(ClusteredResourcePoolBuilder.clusteredDedicated("primary-server-resource", 2, MemoryUnit.MB)))
             .withLoaderWriter(loaderWriter)
             .build();
@@ -79,7 +79,9 @@ public class BasicClusteredLoaderWriterTest {
 
     cache.put(1L, "1");
 
-    assertThat(cache.get(1L), Matchers.is("1"));
+    assertThat(cache.get(1L), is("1"));
+
+    assertThat(loaderWriter.storeMap.get(1L), is("1"));
 
   }
 

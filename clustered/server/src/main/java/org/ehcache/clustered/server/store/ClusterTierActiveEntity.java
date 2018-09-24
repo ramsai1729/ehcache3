@@ -155,7 +155,7 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
   private volatile List<InvalidationTuple> inflightInvalidations;
   private final Map<ClientDescriptor, Boolean> connectedClients = new ConcurrentHashMap<>();
   private final int chainCompactionLimit;
-  private final ServerLockManager lockManager = new LockManagerImpl();
+  private final ServerLockManager lockManager;
 
   private final long dataSizeThreshold = Long.getLong(SYNC_DATA_SIZE_PROP, DEFAULT_SYNC_DATA_SIZE_THRESHOLD);
   private final int dataGetsThreshold = Integer.getInteger(SYNC_DATA_GETS_PROP, DEFAULT_SYNC_DATA_GETS_THRESHOLD);
@@ -183,6 +183,11 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
     }
     management = new ClusterTierManagement(registry, stateService, true, storeIdentifier, entityConfiguration.getManagerIdentifier());
     chainCompactionLimit = Integer.getInteger(CHAIN_COMPACTION_THRESHOLD_PROP, DEFAULT_CHAIN_COMPACTION_THRESHOLD);
+    if (configuration.isLoaderWriterConfigured()) {
+      lockManager = new LockManagerImpl();
+    } else {
+      lockManager = new NoopLockManager();
+    }
   }
 
   static boolean isTrackedMessage(EhcacheEntityMessage msg) {

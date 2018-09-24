@@ -21,7 +21,9 @@ import org.ehcache.CachePersistenceException;
 import org.ehcache.clustered.client.config.ClusteredResourcePool;
 import org.ehcache.clustered.client.config.ClusteredResourceType;
 import org.ehcache.clustered.client.config.ClusteredStoreConfiguration;
+import org.ehcache.clustered.client.internal.loaderwriter.ClusteredLoaderWriterStore;
 import org.ehcache.clustered.client.internal.store.ServerStoreProxy.ServerCallback;
+import org.ehcache.clustered.client.internal.store.lock.LockManager;
 import org.ehcache.clustered.client.internal.store.operations.ChainResolver;
 import org.ehcache.clustered.client.internal.store.operations.ConditionalRemoveOperation;
 import org.ehcache.clustered.client.internal.store.operations.ConditionalReplaceOperation;
@@ -48,7 +50,6 @@ import org.ehcache.core.spi.service.ExecutionService;
 import org.ehcache.core.spi.store.Store;
 import org.ehcache.core.spi.store.events.StoreEventSource;
 import org.ehcache.impl.internal.store.basic.BaseStore;
-import org.ehcache.spi.loaderwriter.CacheLoaderWriterConfiguration;
 import org.ehcache.spi.resilience.StoreAccessException;
 import org.ehcache.core.spi.store.tiering.AuthoritativeTier;
 import org.ehcache.core.spi.time.TimeSource;
@@ -58,7 +59,6 @@ import org.ehcache.core.statistics.StoreOperationOutcomes;
 import org.ehcache.core.statistics.StoreOperationOutcomes.EvictionOutcome;
 import org.ehcache.core.statistics.TierOperationOutcomes;
 import org.ehcache.expiry.ExpiryPolicy;
-import org.ehcache.impl.config.loaderwriter.DefaultCacheLoaderWriterConfiguration;
 import org.ehcache.impl.store.HashUtils;
 import org.ehcache.spi.persistence.StateRepository;
 import org.ehcache.spi.serialization.Serializer;
@@ -589,8 +589,8 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
 
     @Override
-    public <K, V> ClusteredStore<K, V> createStore(boolean useLoaderInAtomics, final Configuration<K, V> storeConfig, final ServiceConfiguration<?>... serviceConfigs) {
-      ClusteredStore<K, V> store = createStoreInternal(storeConfig, serviceConfigs);
+    public <K, V> ClusteredStore<K, V> createStore(boolean useLoaderInAtomics, Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+      ClusteredStore<K, V> store = createStoreInternal(storeConfig, serviceConfigs, useLoaderInAtomics);
 
       tierOperationStatistics.put(store, new OperationStatistic<?>[] {
         createTranslatedStatistic(store, "get", TierOperationOutcomes.GET_TRANSLATION, "get"),
@@ -600,7 +600,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
       return store;
     }
 
-    private <K, V> ClusteredStore<K, V> createStoreInternal(Configuration<K, V> storeConfig, Object[] serviceConfigs) {
+    private <K, V> ClusteredStore<K, V> createStoreInternal(Configuration<K, V> storeConfig, Object[] serviceConfigs, boolean useLoaderInAtomics) {
       connectLock.lock();
       try {
 
@@ -613,7 +613,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
           throw new IllegalStateException(Provider.class.getCanonicalName() + ".createStore called without ClusteringServiceConfiguration");
         }
 
-        final HashSet<ResourceType<?>> clusteredResourceTypes =
+        HashSet<ResourceType<?>> clusteredResourceTypes =
                 new HashSet<>(storeConfig.getResourcePools().getResourceTypeSet());
         clusteredResourceTypes.retainAll(CLUSTER_RESOURCES);
 
@@ -642,8 +642,13 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
           resolver = new ExpiryChainResolver<>(codec, expiry);
         }
 
-
-        ClusteredStore<K, V> store = new ClusteredStore<>(storeConfig, codec, resolver, timeSource);
+        ClusteredStore<K, V> store;
+        if (storeConfig.getCacheLoaderWriter() == null) {
+          store = new ClusteredStore<>(storeConfig, codec, resolver, timeSource);
+        } else {
+          store = new ClusteredLoaderWriterStore<>(storeConfig, codec, resolver, timeSource,
+                  storeConfig.getCacheLoaderWriter(), useLoaderInAtomics);
+        }
 
         createdStores.put(store, new StoreConfig(cacheId, storeConfig, clusteredStoreConfiguration.getConsistency()));
         return store;
@@ -653,7 +658,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
 
     @Override
-    public void releaseStore(final Store<?, ?> resource) {
+    public void releaseStore(Store<?, ?> resource) {
       connectLock.lock();
       try {
         if (createdStores.remove(resource) == null) {
@@ -669,14 +674,14 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
 
     @Override
-    public void initStore(final Store<?, ?> resource) {
+    public void initStore(Store<?, ?> resource) {
       connectLock.lock();
       try {
         StoreConfig storeConfig = createdStores.get(resource);
         if (storeConfig == null) {
           throw new IllegalArgumentException("Given clustered tier is not managed by this provider : " + resource);
         }
-        final ClusteredStore<?, ?> clusteredStore = (ClusteredStore<?, ?>) resource;
+        ClusteredStore<?, ?> clusteredStore = (ClusteredStore<?, ?>) resource;
         ClusteredCacheIdentifier cacheIdentifier = storeConfig.getCacheIdentifier();
         try {
           ServerStoreProxy storeProxy = clusteringService.getServerStoreProxy(cacheIdentifier, storeConfig.getStoreConfig(), storeConfig.getConsistency(),
@@ -806,8 +811,8 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
     }
 
     @Override
-    public <K, V> AuthoritativeTier<K, V> createAuthoritativeTier(Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
-      ClusteredStore<K, V> authoritativeTier = createStoreInternal(storeConfig, serviceConfigs);
+    public <K, V> AuthoritativeTier<K, V> createAuthoritativeTier(boolean useLoaderInAtomics, Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+      ClusteredStore<K, V> authoritativeTier = createStoreInternal(storeConfig, serviceConfigs, useLoaderInAtomics);
 
       tierOperationStatistics.put(authoritativeTier, new OperationStatistic<?>[] {
         createTranslatedStatistic(authoritativeTier, "get", TierOperationOutcomes.GET_AND_FAULT_TRANSLATION, "getAndFault"),

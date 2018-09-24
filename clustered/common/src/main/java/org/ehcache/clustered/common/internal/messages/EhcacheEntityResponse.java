@@ -288,7 +288,15 @@ public abstract class EhcacheEntityResponse implements EntityResponse {
     }
   }
 
+  public static LockFailure lockFailure() {
+    return new LockFailure();
+  }
+
   public static class LockFailure extends EhcacheEntityResponse {
+
+    private LockFailure() {
+
+    }
 
     @Override
     public EhcacheResponseType getResponseType() {

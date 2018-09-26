@@ -69,8 +69,8 @@ public class ClusteredLoaderWriterStore<K, V> extends ClusteredStore<K, V> imple
     this.useLoaderInAtomics = true;
   }
 
-  private LockingServerStoreProxy getProxy() {
-    return (LockingServerStoreProxy) storeProxy;
+  private LockManager getProxy() {
+    return (LockManager) storeProxy;
   }
 
   @Override

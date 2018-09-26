@@ -111,7 +111,7 @@ public class DelegatingLoaderWriterStore<K, V> implements Store<K, V>{
 
   @Override
   public Map<K, ValueHolder<V>> bulkCompute(Set<? extends K> keys, Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> remappingFunction) throws StoreAccessException {
-    return null;
+    return delegate.bulkCompute(keys, remappingFunction);
   }
 
   @Override
@@ -121,7 +121,7 @@ public class DelegatingLoaderWriterStore<K, V> implements Store<K, V>{
 
   @Override
   public Map<K, ValueHolder<V>> bulkComputeIfAbsent(Set<? extends K> keys, Function<Iterable<? extends K>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> mappingFunction) throws StoreAccessException {
-    return null;
+    return delegate.bulkComputeIfAbsent(keys, mappingFunction);
   }
 
   @Override

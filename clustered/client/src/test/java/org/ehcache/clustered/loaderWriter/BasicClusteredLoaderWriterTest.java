@@ -35,6 +35,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.ehcache.clustered.client.config.builders.ClusteringServiceConfigurationBuilder.cluster;
 import static org.ehcache.config.builders.CacheConfigurationBuilder.*;
@@ -85,6 +87,132 @@ public class BasicClusteredLoaderWriterTest {
 
   }
 
+  @Test
+  public void testLoaderWriterMultipleClients() {
 
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+
+    CacheConfiguration<Long, String>  cacheConfiguration = newCacheConfigurationBuilder(Long.class, String.class,
+            ResourcePoolsBuilder
+                    .newResourcePoolsBuilder()
+                    .with(ClusteredResourcePoolBuilder.clusteredDedicated("primary-server-resource", 2, MemoryUnit.MB)))
+            .withLoaderWriter(loaderWriter)
+            .build();
+
+    CacheManager cacheManager1 = CacheManagerBuilder
+            .newCacheManagerBuilder()
+            .with(cluster(CLUSTER_URI).autoCreate())
+            .withCache("cache-1", cacheConfiguration)
+            .build(true);
+
+    CacheManager cacheManager2 = CacheManagerBuilder
+            .newCacheManagerBuilder()
+            .with(cluster(CLUSTER_URI).autoCreate())
+            .withCache("cache-1", cacheConfiguration)
+            .build(true);
+
+    Cache<Long, String> client1 = cacheManager1.getCache("cache-1", Long.class, String.class);
+    Cache<Long, String> client2 = cacheManager2.getCache("cache-1", Long.class, String.class);
+
+    client1.put(1L, "1");
+    client2.put(1L, "2");
+
+    assertThat(client1.get(1L), is("2"));
+    assertThat(loaderWriter.storeMap.get(1L), is("2"));
+
+    client1.remove(1L);
+
+    assertThat(client1.get(1L), nullValue());
+    assertThat(loaderWriter.storeMap.get(1L), nullValue());
+
+  }
+
+  @Test
+  public void testCASOpsMultipleClients() {
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+
+    CacheConfiguration<Long, String>  cacheConfiguration = newCacheConfigurationBuilder(Long.class, String.class,
+            ResourcePoolsBuilder
+                    .newResourcePoolsBuilder()
+                    .with(ClusteredResourcePoolBuilder.clusteredDedicated("primary-server-resource", 2, MemoryUnit.MB)))
+            .withLoaderWriter(loaderWriter)
+            .build();
+
+    CacheManager cacheManager1 = CacheManagerBuilder
+            .newCacheManagerBuilder()
+            .with(cluster(CLUSTER_URI).autoCreate())
+            .withCache("cache-1", cacheConfiguration)
+            .build(true);
+
+    CacheManager cacheManager2 = CacheManagerBuilder
+            .newCacheManagerBuilder()
+            .with(cluster(CLUSTER_URI).autoCreate())
+            .withCache("cache-1", cacheConfiguration)
+            .build(true);
+
+    Cache<Long, String> client1 = cacheManager1.getCache("cache-1", Long.class, String.class);
+    Cache<Long, String> client2 = cacheManager2.getCache("cache-1", Long.class, String.class);
+
+    assertThat(client1.putIfAbsent(1L, "1"), nullValue());
+    assertThat(client2.putIfAbsent(1L, "2"), is("1"));
+
+    assertThat(client1.get(1L), is("1"));
+    assertThat(loaderWriter.storeMap.get(1L), is("1"));
+
+    assertThat(client1.replace(1L, "2"), is("1"));
+    assertThat(client2.replace(1L, "3"), is("2"));
+
+    assertThat(client1.get(1L), is("3"));
+    assertThat(loaderWriter.storeMap.get(1L), is("3"));
+
+    assertThat(client1.replace(1L, "2", "4"), is(false));
+    assertThat(client2.replace(1L, "3", "4"), is(true));
+
+    assertThat(client1.get(1L), is("4"));
+    assertThat(loaderWriter.storeMap.get(1L), is("4"));
+
+    assertThat(client1.remove(1L, "5"), is(false));
+    assertThat(client2.remove(1L, "4"), is(true));
+
+  }
+
+  @Test
+  public void testBulkOps() throws Exception {
+    TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
+    CacheConfiguration<Long, String>  cacheConfiguration = newCacheConfigurationBuilder(Long.class, String.class,
+            ResourcePoolsBuilder
+                    .newResourcePoolsBuilder()
+                    .with(ClusteredResourcePoolBuilder.clusteredDedicated("primary-server-resource", 2, MemoryUnit.MB)))
+            .withLoaderWriter(loaderWriter)
+            .build();
+
+    CacheManager cacheManager = CacheManagerBuilder
+            .newCacheManagerBuilder()
+            .with(cluster(CLUSTER_URI).autoCreate())
+            .withCache("cache-1", cacheConfiguration)
+            .build(true);
+
+    Cache<Long, String> cache = cacheManager.getCache("cache-1", Long.class, String.class);
+
+    Map<Long, String> mappings = new HashMap<>();
+
+    for (int i = 1; i <= 5; i++) {
+      mappings.put((long) i, "" + i);
+    }
+
+    cache.putAll(mappings);
+
+    assertThat(loaderWriter.storeMap.keySet(), containsInAnyOrder(mappings.keySet().toArray()));
+
+    cache.clear();
+
+    Map<Long, String> loadedData = cache.getAll(mappings.keySet());
+
+    assertThat(mappings.keySet(), containsInAnyOrder(loadedData.keySet().toArray()));
+
+    cache.removeAll(mappings.keySet());
+
+    assertThat(loaderWriter.storeMap.isEmpty(), is(true));
+  }
 
 }

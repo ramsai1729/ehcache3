@@ -18,15 +18,17 @@ package org.ehcache.clustered.client.internal.store.lock;
 import org.ehcache.clustered.client.internal.store.ClusterTierClientEntity;
 import org.ehcache.clustered.client.internal.store.ServerStoreProxyException;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse;
-import org.ehcache.clustered.common.internal.messages.EhcacheResponseType;
-import org.ehcache.clustered.common.internal.messages.ServerStoreOpMessage;
+import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.LockSuccess;
 import org.ehcache.clustered.common.internal.messages.ServerStoreOpMessage.LockMessage;
+import org.ehcache.clustered.common.internal.messages.ServerStoreOpMessage.UnlockMessage;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.impl.internal.concurrent.ConcurrentHashMap;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
+
+import static org.ehcache.clustered.common.internal.messages.EhcacheResponseType.LOCK_FAILURE;
 
 public class LockManagerImpl implements LockManager {
 
@@ -39,28 +41,32 @@ public class LockManagerImpl implements LockManager {
 
   @Override
   public Chain lock(long hash) throws TimeoutException {
-    EhcacheEntityResponse response;
-    try {
-      response = clientEntity.invokeAndWaitForComplete(new LockMessage(hash), false);
-    } catch (TimeoutException tme) {
-      throw tme;
-    } catch (Exception e) {
-      throw new ServerStoreProxyException(e);
-    }
+    LockSuccess response = getlockResponse(hash);
+    locksHeld.add(hash);
+    return response.getChain();
+  }
 
-    if (response != null && response.getResponseType() == EhcacheResponseType.LOCK_RESPONSE ) {
-      locksHeld.add(hash);
-      return ((EhcacheEntityResponse.LockSuccess)response).getChain();
-    } else {
-      throw new ServerStoreProxyException("Response for acquiring lock was invalid : " +
-              (response != null ? response.getResponseType() : "null message"));
-    }
+  private LockSuccess getlockResponse(long hash) throws TimeoutException {
+    EhcacheEntityResponse response;
+    do {
+      try {
+        response = clientEntity.invokeAndWaitForComplete(new LockMessage(hash), false);
+      } catch (TimeoutException tme) {
+        throw tme;
+      } catch (Exception e) {
+        throw new ServerStoreProxyException(e);
+      }
+      if (response == null) {
+        throw new ServerStoreProxyException("Response for acquiring lock was invalid null message");
+      }
+    } while (response.getResponseType() == LOCK_FAILURE);
+    return (LockSuccess) response;
   }
 
   @Override
   public void unlock(long hash) throws TimeoutException {
     try {
-      clientEntity.invokeAndWaitForComplete(new ServerStoreOpMessage.UnlockMessage(hash), false);
+      clientEntity.invokeAndWaitForComplete(new UnlockMessage(hash), false);
       locksHeld.remove(hash);
     } catch (TimeoutException tme) {
       throw tme;

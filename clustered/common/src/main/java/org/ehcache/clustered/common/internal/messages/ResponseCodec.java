@@ -185,7 +185,7 @@ public class ResponseCodec {
           .struct(CHAIN_FIELD, resolve.getChain(), ChainCodec::encode)
           .encode().array();
       }
-      case LOCK_RESPONSE: {
+      case LOCK_SUCCESS: {
         EhcacheEntityResponse.LockSuccess lockSuccess = (EhcacheEntityResponse.LockSuccess) response;
         return LOCK_RESPONSE_STRUCT.encoder()
           .enm(RESPONSE_TYPE_FIELD_NAME, lockSuccess.getResponseType())
@@ -266,7 +266,7 @@ public class ResponseCodec {
         Chain chain = ChainCodec.decode(decoder.struct(CHAIN_FIELD));
         return EhcacheEntityResponse.resolveRequest(key, chain);
       }
-      case LOCK_RESPONSE: {
+      case LOCK_SUCCESS: {
         decoder = LOCK_RESPONSE_STRUCT.decoder(buffer);
         Chain chain = ChainCodec.decode(decoder.struct(CHAIN_FIELD));
         return new EhcacheEntityResponse.LockSuccess(chain);

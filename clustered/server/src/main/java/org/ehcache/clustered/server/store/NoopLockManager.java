@@ -17,6 +17,9 @@ package org.ehcache.clustered.server.store;
 
 import org.terracotta.entity.ClientDescriptor;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 public class NoopLockManager implements ServerLockManager {
   @Override
   public boolean lock(long key, ClientDescriptor client) {
@@ -33,7 +36,7 @@ public class NoopLockManager implements ServerLockManager {
   }
 
   @Override
-  public void sweepLocksForClient(ClientDescriptor client) {
+  public void sweepLocksForClient(ClientDescriptor client, Consumer<List<Long>> removeHeldKeys) {
 
   }
 }

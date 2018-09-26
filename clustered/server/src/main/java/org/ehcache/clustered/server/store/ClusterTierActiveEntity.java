@@ -107,7 +107,7 @@ import static org.ehcache.clustered.common.internal.messages.EhcacheEntityRespon
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.getResponse;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.hashInvalidationDone;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.lockFailure;
-import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.lockResponse;
+import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.lockSuccess;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.resolveRequest;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.serverInvalidateHash;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.success;
@@ -269,6 +269,8 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
         it.remove();
       }
     }
+
+    lockManager.sweepLocksForClient(clientDescriptor, heldKeys -> heldKeys.forEach(stateService.getStore(storeIdentifier)::remove));
 
     connectedClients.remove(clientDescriptor);
   }
@@ -457,7 +459,7 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
         if (lockManager.lock(lockMessage.getHash(), activeInvokeContext.getClientDescriptor())) {
           try {
             Chain chain = cacheStore.get(lockMessage.getHash());
-            return lockResponse(chain);
+            return lockSuccess(chain);
           } catch (TimeoutException e) {
             throw new AssertionError("Server side store is not expected to throw timeout exception");
           }

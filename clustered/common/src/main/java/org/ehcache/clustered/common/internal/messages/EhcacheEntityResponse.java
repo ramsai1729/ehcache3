@@ -266,7 +266,7 @@ public abstract class EhcacheEntityResponse implements EntityResponse {
     }
   }
 
-  public static LockSuccess lockResponse(Chain chain) {
+  public static LockSuccess lockSuccess(Chain chain) {
     return new LockSuccess(chain);
   }
 
@@ -284,7 +284,7 @@ public abstract class EhcacheEntityResponse implements EntityResponse {
 
     @Override
     public EhcacheResponseType getResponseType() {
-      return EhcacheResponseType.LOCK_RESPONSE;
+      return EhcacheResponseType.LOCK_SUCCESS;
     }
   }
 

@@ -35,7 +35,7 @@ public enum EhcacheResponseType {
   ALL_INVALIDATION_DONE,
   PREPARE_FOR_DESTROY,
   RESOLVE_REQUEST,
-  LOCK_RESPONSE,
+  LOCK_SUCCESS,
   LOCK_FAILURE;
 
 
@@ -53,7 +53,7 @@ public enum EhcacheResponseType {
     .mapping(EhcacheResponseType.MAP_VALUE, 88)
     .mapping(EhcacheResponseType.PREPARE_FOR_DESTROY, 89)
     .mapping(EhcacheResponseType.RESOLVE_REQUEST, 90)
-    .mapping(EhcacheResponseType.LOCK_RESPONSE, 91)
+    .mapping(EhcacheResponseType.LOCK_SUCCESS, 91)
     .mapping(EhcacheResponseType.LOCK_FAILURE, 92)
     .build();
 }

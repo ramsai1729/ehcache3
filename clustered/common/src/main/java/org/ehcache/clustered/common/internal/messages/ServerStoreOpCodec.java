@@ -79,7 +79,8 @@ public class ServerStoreOpCodec {
     .build();
 
   private static final Struct LOCK_STRUCT = newStructBuilder()
-    .int64("hash", 10)
+    .enm(MESSAGE_TYPE_FIELD_NAME, MESSAGE_TYPE_FIELD_INDEX, EHCACHE_MESSAGE_TYPES_ENUM_MAPPING)
+    .int64("hash", 30)
     .build();
 
   private final MessageCodecUtils messageCodecUtils = new MessageCodecUtils();

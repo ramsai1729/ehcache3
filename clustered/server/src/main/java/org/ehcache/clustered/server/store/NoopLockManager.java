@@ -18,6 +18,7 @@ package org.ehcache.clustered.server.store;
 import org.terracotta.entity.ClientDescriptor;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class NoopLockManager implements ServerLockManager {
@@ -31,7 +32,7 @@ public class NoopLockManager implements ServerLockManager {
   }
 
   @Override
-  public void createLockStateAfterFailover() {
+  public void createLockStateAfterFailover(ClientDescriptor client, Set<Long> locksHeld) {
 
   }
 

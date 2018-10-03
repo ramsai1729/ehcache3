@@ -17,6 +17,7 @@ package org.ehcache.clustered.client.internal.store.lock;
 
 import org.ehcache.clustered.client.internal.store.ClusterTierClientEntity;
 import org.ehcache.clustered.client.internal.store.ServerStoreProxyException;
+import org.ehcache.clustered.common.internal.messages.ClusterTierReconnectMessage;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.LockSuccess;
 import org.ehcache.clustered.common.internal.messages.ServerStoreOpMessage.LockMessage;
@@ -37,6 +38,11 @@ public class LockManagerImpl implements LockManager {
 
   public LockManagerImpl(ClusterTierClientEntity clientEntity) {
     this.clientEntity = clientEntity;
+    clientEntity.addReconnectListener(this::reconnectListener);
+  }
+
+  private void reconnectListener(ClusterTierReconnectMessage reconnectMessage) {
+    reconnectMessage.addLocksHeld(locksHeld);
   }
 
   @Override

@@ -623,6 +623,7 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
       ClusterTierReconnectMessage reconnectMessage = reconnectMessageCodec.decode(bytes);
       ServerSideServerStore serverStore = stateService.getStore(storeIdentifier);
       addInflightInvalidationsForStrongCache(clientDescriptor, reconnectMessage, serverStore);
+      lockManager.createLockStateAfterFailover(clientDescriptor, reconnectMessage.getLocksHeld());
 
       LOGGER.info("Client '{}' successfully reconnected to newly promoted ACTIVE after failover.", clientDescriptor);
 

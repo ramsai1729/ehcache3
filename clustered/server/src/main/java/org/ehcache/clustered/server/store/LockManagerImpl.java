@@ -45,8 +45,13 @@ public class LockManagerImpl implements ServerLockManager {
   }
 
   @Override
-  public void createLockStateAfterFailover() {
-
+  public void createLockStateAfterFailover(ClientDescriptor client, Set<Long> locksHeld) {
+    locksHeld.forEach(key -> {
+      ClientDescriptor absent = blockedKeys.putIfAbsent(key, client);
+      if (absent != null) {
+        throw new IllegalStateException("Key is already locked");
+      }
+    });
   }
 
   @Override

@@ -22,7 +22,9 @@ import org.mockito.Mockito;
 import org.terracotta.entity.ClientDescriptor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -89,6 +91,27 @@ public class LockManagerImplTest {
     assertThat(lockManager.lock(2L, clientDescriptor1), is(false));
     assertThat(lockManager.lock(3L, clientDescriptor1), is(false));
     assertThat(lockManager.lock(4L, clientDescriptor1), is(false));
+
+  }
+
+  @Test
+  public void testCreateLockStateAfterFailover() {
+    LockManagerImpl lockManager = new LockManagerImpl();
+
+    ClientDescriptor clientDescriptor = new TestClientDescriptor();
+
+    Set<Long> locks = new HashSet<>();
+    locks.add(1L);
+    locks.add(100L);
+    locks.add(1000L);
+
+    lockManager.createLockStateAfterFailover(clientDescriptor, locks);
+
+    ClientDescriptor clientDescriptor1 = new TestClientDescriptor();
+
+    assertThat(lockManager.lock(100L, clientDescriptor1), is(false));
+    assertThat(lockManager.lock(1000L, clientDescriptor1), is(false));
+    assertThat(lockManager.lock(1L, clientDescriptor1), is(false));
 
   }
 

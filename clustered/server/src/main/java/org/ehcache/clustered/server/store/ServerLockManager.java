@@ -18,6 +18,7 @@ package org.ehcache.clustered.server.store;
 import org.terracotta.entity.ClientDescriptor;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public interface ServerLockManager {
@@ -26,7 +27,7 @@ public interface ServerLockManager {
 
   void unlock(long key);
 
-  void createLockStateAfterFailover();
+  void createLockStateAfterFailover(ClientDescriptor client, Set<Long> locksHeld);
 
   void sweepLocksForClient(ClientDescriptor client, Consumer<List<Long>> removeHeldKeys);
 

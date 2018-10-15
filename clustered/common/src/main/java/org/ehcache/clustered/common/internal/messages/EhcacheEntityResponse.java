@@ -294,7 +294,7 @@ public abstract class EhcacheEntityResponse implements EntityResponse {
 
   public static class LockFailure extends EhcacheEntityResponse {
 
-    private LockFailure() {
+    LockFailure() {
 
     }
 

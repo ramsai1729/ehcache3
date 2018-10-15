@@ -42,6 +42,7 @@ import static org.ehcache.clustered.common.internal.messages.EhcacheEntityRespon
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.ServerInvalidateHash;
 import static org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse.MapValue;
 import static org.ehcache.clustered.common.internal.messages.EhcacheResponseType.EHCACHE_RESPONSE_TYPES_ENUM_MAPPING;
+import static org.ehcache.clustered.common.internal.messages.EhcacheResponseType.LOCK_FAILURE;
 import static org.ehcache.clustered.common.internal.messages.EhcacheResponseType.RESPONSE_TYPE_FIELD_INDEX;
 import static org.ehcache.clustered.common.internal.messages.EhcacheResponseType.RESPONSE_TYPE_FIELD_NAME;
 import static org.ehcache.clustered.common.internal.messages.MessageCodecUtils.KEY_FIELD;
@@ -103,6 +104,9 @@ public class ResponseCodec {
   private static final Struct LOCK_RESPONSE_STRUCT = newStructBuilder()
     .enm(RESPONSE_TYPE_FIELD_NAME, RESPONSE_TYPE_FIELD_INDEX, EHCACHE_RESPONSE_TYPES_ENUM_MAPPING)
     .struct(CHAIN_FIELD, 20, CHAIN_STRUCT)
+    .build();
+  private static final Struct LOCK_FAILURE_STRUCT = newStructBuilder()
+    .enm(RESPONSE_TYPE_FIELD_NAME, RESPONSE_TYPE_FIELD_INDEX, EHCACHE_RESPONSE_TYPES_ENUM_MAPPING)
     .build();
 
   public byte[] encode(EhcacheEntityResponse response) {

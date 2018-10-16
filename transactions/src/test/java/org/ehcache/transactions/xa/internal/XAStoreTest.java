@@ -162,7 +162,7 @@ public class XAStoreTest {
         }
       });
     try {
-      provider.rank(Collections.singleton(mock(XAStoreConfiguration.class)));
+      provider.wrapperStoreRank(Collections.singleton(mock(XAStoreConfiguration.class)));
       fail("Expected exception");
     } catch (IllegalStateException e) {
       assertThat(e.getMessage(), containsString("TransactionManagerProvider"));
@@ -1458,10 +1458,10 @@ public class XAStoreTest {
     serviceLocator.startAllServices();
 
     Set<ServiceConfiguration<?>> xaStoreConfigs = Collections.singleton(configuration);
-    assertThat(provider.rank(xaStoreConfigs), is(1));
+    assertThat(provider.wrapperStoreRank(xaStoreConfigs), is(1));
 
     Set<ServiceConfiguration<?>> emptyConfigs = emptySet();
-    assertThat(provider.rank(emptyConfigs), is(0));
+    assertThat(provider.wrapperStoreRank(emptyConfigs), is(0));
 
   }
 

@@ -379,7 +379,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
   ValueHolder<V> computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) throws StoreAccessException;
 
   /**
-   * Compute a value for every key passed in the {@link Set} {@code keys} argument, using the {@code remappingFunction} to getAndCompute the value.
+   * Compute a value for every key passed in the {@link Set} {@code keys} argument, using the {@code remappingFunction} to compute the value.
    * <p>
    * The function gets an {@link Iterable} of {@link java.util.Map.Entry} key/value pairs, where each entry's value is its currently stored value,
    * or null if nothing is stored under the key. It is expected that the function returns an {@link Iterable} of {@link java.util.Map.Entry}
@@ -389,13 +389,13 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * Note that the remapping function can be invoked multiple times with key subsets but that it will never the see
    * the same key in different invocations.
    * <p>
-   * Behaviour is equivalent to getAndCompute invocations in an external loop. There is no cross key atomicity
+   * Behaviour is equivalent to compute invocations in an external loop. There is no cross key atomicity
    * guarantee / requirement. Implementations may provide coarser grained guarantees.
    * <p>
    * This is equivalent to calling {@link Store#bulkCompute(Set, Function, Supplier)}
    * with a "replaceEquals" function that returns {@link Boolean#TRUE true}
    *
-   * @param keys the set of keys on which to getAndCompute values
+   * @param keys the set of keys on which to compute values
    * @param remappingFunction the function that generates new values
    * @return a {@link Map} of key/value pairs for each key in {@code keys} to the value computed.
    *
@@ -407,7 +407,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
   Map<K, ValueHolder<V>> bulkCompute(Set<? extends K> keys, Function<Iterable<? extends Map.Entry<? extends K, ? extends V>>, Iterable<? extends Map.Entry<? extends K, ? extends V>>> remappingFunction) throws StoreAccessException;
 
   /**
-   * Compute a value for every key passed in the {@link Set} {@code keys} argument, using the {@code remappingFunction} to getAndCompute the value.
+   * Compute a value for every key passed in the {@link Set} {@code keys} argument, using the {@code remappingFunction} to compute the value.
    * <p>
    * The function gets an {@link Iterable} of {@link java.util.Map.Entry} key/value pairs, where each entry's value is its currently stored value,
    * or null if nothing is stored under the key. It is expected that the function returns an {@link Iterable} of {@link java.util.Map.Entry}
@@ -417,10 +417,10 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * Note that the remapping function can be invoked multiple times with key subsets but that it will never the see
    * the same key in different invocations.
    * <p>
-   * Behaviour is equivalent to getAndCompute invocations in an external loop. There is no cross key atomicity
+   * Behaviour is equivalent to compute invocations in an external loop. There is no cross key atomicity
    * guarantee / requirement. Implementations may provide coarser grained guarantees.
    *
-   * @param keys the set of keys on which to getAndCompute values
+   * @param keys the set of keys on which to compute values
    * @param remappingFunction the function that generates new values
    * @param replaceEqual If the existing value in the store is {@link java.lang.Object#equals(Object)} to
    *        the value returned from the mappingFunction this function will be invoked. If this function
@@ -437,7 +437,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
 
   /**
    * Compute a value for every key passed in the {@link Set} <code>keys</code> argument using the <code>mappingFunction</code>
-   * to getAndCompute the value.
+   * to compute the value.
    * <p>
    * The function gets an {@link Iterable} of {@link java.util.Map.Entry} key/value pairs, where each entry's value is its currently stored value
    * for each key that is not mapped in the store. It is expected that the function returns an {@link Iterable} of {@link java.util.Map.Entry}
@@ -447,7 +447,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * <p>
    * Note: This method guarantees atomicity of computations for each individual key in {@code keys}. Implementations may choose to provide coarser grained atomicity.
    *
-   * @param keys the keys to getAndCompute a new value for, if they're not in the store.
+   * @param keys the keys to compute a new value for, if they're not in the store.
    * @param mappingFunction the function that generates new values.
    * @return a {@link Map} of key/value pairs for each key in <code>keys</code> to the previously missing value.
    * @throws ClassCastException if the specified key(s) are not of the correct type ({@code K}). Also thrown if the given function produces

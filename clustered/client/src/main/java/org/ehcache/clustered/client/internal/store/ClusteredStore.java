@@ -483,7 +483,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
         }
       }
     } else {
-      throw new UnsupportedOperationException("This getAndCompute method is not yet capable of handling generic computation functions");
+      throw new UnsupportedOperationException("This bulkCompute method is not yet capable of handling generic computation functions");
     }
     return valueHolderMap;
   }
@@ -514,7 +514,7 @@ public class ClusteredStore<K, V> extends BaseStore<K, V> implements Authoritati
       }
       return map;
     } else {
-      throw new UnsupportedOperationException("This getAndCompute method is not yet capable of handling generic computation functions");
+      throw new UnsupportedOperationException("This bulkComputeIfAbsent method is not yet capable of handling generic computation functions");
     }
   }
 

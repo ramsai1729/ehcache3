@@ -118,7 +118,7 @@ public abstract class AbstractOffHeapStore<K, V> extends BaseStore<K, V> impleme
     this.conditionalRemoveObserver = createObserver("conditionalRemove", StoreOperationOutcomes.ConditionalRemoveOutcome.class, true);
     this.replaceObserver = createObserver("replace", StoreOperationOutcomes.ReplaceOutcome.class, true);
     this.conditionalReplaceObserver = createObserver("conditionalReplace", StoreOperationOutcomes.ConditionalReplaceOutcome.class, true);
-    this.computeObserver = createObserver("getAndCompute", StoreOperationOutcomes.ComputeOutcome.class, true);
+    this.computeObserver = createObserver("compute", StoreOperationOutcomes.ComputeOutcome.class, true);
     this.computeIfAbsentObserver = createObserver("computeIfAbsent", StoreOperationOutcomes.ComputeIfAbsentOutcome.class, true);
     this.evictionObserver = createObserver("eviction", StoreOperationOutcomes.EvictionOutcome.class, false);
     this.expirationObserver = createObserver("expiration", StoreOperationOutcomes.ExpirationOutcome.class, false);

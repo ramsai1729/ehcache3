@@ -19,6 +19,7 @@ import org.ehcache.Cache;
 import org.ehcache.core.CacheConfigurationChangeListener;
 import org.ehcache.core.events.NullStoreEventDispatcher;
 import org.ehcache.core.spi.store.Store;
+import org.ehcache.core.spi.store.WrapperStore;
 import org.ehcache.core.spi.store.events.StoreEventSource;
 import org.ehcache.spi.resilience.StoreAccessException;
 
@@ -31,7 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class DelegatingLoaderWriterStore<K, V> implements Store<K, V>{
+public class DelegatingLoaderWriterStore<K, V> implements WrapperStore<K, V> {
 
   private final Store<K, V> delegate;
 

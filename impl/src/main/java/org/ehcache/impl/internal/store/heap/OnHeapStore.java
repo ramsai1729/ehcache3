@@ -243,7 +243,7 @@ public class OnHeapStore<K, V> extends BaseStore<K, V> implements HigherCachingT
     conditionalRemoveObserver = createObserver("conditionalRemove", StoreOperationOutcomes.ConditionalRemoveOutcome.class, true);
     replaceObserver = createObserver("replace", StoreOperationOutcomes.ReplaceOutcome.class, true);
     conditionalReplaceObserver = createObserver("conditionalReplace", StoreOperationOutcomes.ConditionalReplaceOutcome.class, true);
-    computeObserver = createObserver("getAndCompute", StoreOperationOutcomes.ComputeOutcome.class, true);
+    computeObserver = createObserver("compute", StoreOperationOutcomes.ComputeOutcome.class, true);
     computeIfAbsentObserver = createObserver("computeIfAbsent", StoreOperationOutcomes.ComputeIfAbsentOutcome.class, true);
     evictionObserver = createObserver("eviction", StoreOperationOutcomes.EvictionOutcome.class, false);
     expirationObserver = createObserver("expiration", StoreOperationOutcomes.ExpirationOutcome.class, false);

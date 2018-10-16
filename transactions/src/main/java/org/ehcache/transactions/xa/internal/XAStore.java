@@ -87,7 +87,7 @@ import static org.ehcache.core.spi.service.ServiceUtils.findSingletonAmongst;
  * A {@link Store} implementation wrapping another {@link Store} driven by a JTA
  * {@link javax.transaction.TransactionManager} using the XA 2-phase commit protocol.
  */
-public class XAStore<K, V> implements Store<K, V> {
+public class XAStore<K, V> implements WrapperStore<K, V> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(XAStore.class);
 
@@ -590,9 +590,6 @@ public class XAStore<K, V> implements Store<K, V> {
     V oldValue = softLock == null ? null : softLock.getOldValue();
     V newValue = mappingFunction.apply(key, oldValue);
     XAValueHolder<V> xaValueHolder = newValue == null ? null : new XAValueHolder<>(newValue, timeSource.getTimeMillis());
-//    if (Objects.equals(oldValue, newValue) && !replaceEqual.get()) {
-//      return xaValueHolder;
-//    }
     if (newValue != null) {
       checkValue(newValue);
     }
@@ -800,8 +797,8 @@ public class XAStore<K, V> implements Store<K, V> {
 
       List<ServiceConfiguration<?>> serviceConfigList = Arrays.asList(serviceConfigs);
 
-      Store.Provider underlyingStoreProvider =
-          selectProvider(configuredTypes, serviceConfigList, xaServiceConfiguration);
+      Store.Provider underlyingStoreProvider = StoreSupport.selectStoreProvider(serviceProvider,
+              storeConfig.getResourcePools().getResourceTypeSet(), serviceConfigList);
 
       String uniqueXAResourceId = xaServiceConfiguration.getUniqueXAResourceId();
       List<ServiceConfiguration<?>> underlyingServiceConfigs = new ArrayList<>(serviceConfigList.size() + 5); // pad a bit because we add stuff
@@ -1021,16 +1018,8 @@ public class XAStore<K, V> implements Store<K, V> {
       this.serviceProvider = null;
     }
 
-    private Store.Provider selectProvider(final Set<ResourceType<?>> resourceTypes,
-                                          final Collection<ServiceConfiguration<?>> serviceConfigs,
-                                          final XAStoreConfiguration xaConfig) {
-      List<ServiceConfiguration<?>> configsWithoutXA = new ArrayList<>(serviceConfigs);
-      configsWithoutXA.remove(xaConfig);
-      return StoreSupport.selectStoreProvider(serviceProvider, resourceTypes, configsWithoutXA);
-    }
-
     @Override
-    public int rank(Collection<ServiceConfiguration<?>> serviceConfigs) {
+    public int wrapperStoreRank(Collection<ServiceConfiguration<?>> serviceConfigs) {
       XAStoreConfiguration xaServiceConfiguration = findSingletonAmongst(XAStoreConfiguration.class, serviceConfigs);
       if (xaServiceConfiguration == null) {
         // An XAStore must be configured for use

@@ -168,7 +168,7 @@ public class LocalLoaderWriterStore<K, V> implements WrapperStore<K, V> {
       return inCache;
     };
 
-    delegate.compute(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
+    delegate.computeAndGet(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
     if (hitRemoved[1]) {
       return Store.RemoveStatus.REMOVED;
     }
@@ -240,7 +240,7 @@ public class LocalLoaderWriterStore<K, V> implements WrapperStore<K, V> {
       return inCache;
     };
 
-    delegate.compute(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
+    delegate.computeAndGet(key, remappingFunction, SUPPLY_FALSE, SUPPLY_FALSE);
     if (successHit[0]) {
       return Store.ReplaceStatus.HIT;
     } else {
@@ -293,7 +293,7 @@ public class LocalLoaderWriterStore<K, V> implements WrapperStore<K, V> {
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
+  public ValueHolder<V> computeAndGet(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
 
     BiFunction<? super K, ? super V, ? extends V> remappingFunction = (mappedKey, mappedValue) -> {
       V newValue = mappingFunction.apply(mappedKey, mappedValue);
@@ -311,7 +311,7 @@ public class LocalLoaderWriterStore<K, V> implements WrapperStore<K, V> {
       return newValue;
     };
 
-    return delegate.compute(key, remappingFunction, replaceEqual, SUPPLY_FALSE);
+    return delegate.computeAndGet(key, remappingFunction, replaceEqual, SUPPLY_FALSE);
   }
 
   @Override

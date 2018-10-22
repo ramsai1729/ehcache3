@@ -101,7 +101,7 @@ public class DelegatingLoaderWriterStore<K, V> implements WrapperStore<K, V> {
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
+  public ValueHolder<V> computeAndGet(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
     throw new UnsupportedOperationException("Implement me");
   }
 

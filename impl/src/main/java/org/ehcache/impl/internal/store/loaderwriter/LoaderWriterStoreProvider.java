@@ -27,10 +27,8 @@ import org.ehcache.spi.service.ServiceConfiguration;
 import org.ehcache.spi.service.ServiceDependencies;
 import org.ehcache.spi.service.ServiceProvider;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,12 +42,13 @@ public class LoaderWriterStoreProvider implements WrapperStore.Provider {
   private final Map<Store<?, ?>, StoreRef<?, ?>> createdStores = new ConcurrentHashMap<>();
 
   @Override
-  public <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+  public <K, V> Store<K, V> createStore(Store.Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
     Store.Provider underlyingStoreProvider = StoreSupport.selectStoreProvider(serviceProvider,
             storeConfig.getResourcePools().getResourceTypeSet(), Arrays.asList(serviceConfigs));
-    Store<K, V> store = underlyingStoreProvider.createStore(useLoaderInAtomics , storeConfig, serviceConfigs);
+    Store<K, V> store = underlyingStoreProvider.createStore(storeConfig, serviceConfigs);
 
-    LocalLoaderWriterStore<K, V> loaderWriterStore = new LocalLoaderWriterStore<>(store, storeConfig.getCacheLoaderWriter(), useLoaderInAtomics, storeConfig.getExpiry());
+    LocalLoaderWriterStore<K, V> loaderWriterStore = new LocalLoaderWriterStore<>(store, storeConfig.getCacheLoaderWriter(),
+            storeConfig.useLoaderInAtomics(), storeConfig.getExpiry());
     createdStores.put(loaderWriterStore, new StoreRef<>(store, underlyingStoreProvider));
     return loaderWriterStore;
   }

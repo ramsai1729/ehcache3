@@ -297,7 +297,6 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * @throws NullPointerException if any of the arguments is {@code null}
    * @throws StoreAccessException if the mapping can't be changed
    *
-   * @see #compute(Object, BiFunction, Supplier, Supplier)
    */
   ValueHolder<V> getAndCompute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction) throws StoreAccessException;
 
@@ -342,7 +341,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
    * @throws StoreAccessException if the mapping can't be changed
    *
    */
-  ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException;
+  ValueHolder<V> computeAndGet(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException;
 
   /**
    * Compute the value for the given key (only if absent or expired) by invoking the given function to produce the value.
@@ -540,7 +539,7 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
      * @param serviceConfigs the configurations the Provider may need to configure the Store
      * @return the Store honoring the configurations passed in
      */
-    <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs);
+    <K, V> Store<K, V> createStore(Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs);
 
     /**
      * Informs this Provider, a Store it created is being disposed (i.e. closed)
@@ -644,6 +643,13 @@ public interface Store<K, V> extends ConfigurationChangeSupport {
      *
      */
     CacheLoaderWriter<? super K, V> getCacheLoaderWriter();
+
+    /**
+     * Whether Store should use loader-writer in atomic ops or not
+     */
+    default boolean useLoaderInAtomics() {
+      return false;
+    }
   }
 
   /**

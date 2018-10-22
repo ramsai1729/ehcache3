@@ -194,7 +194,7 @@ public class Ehcache<K, V> extends EhcacheBase<K, V> {
 
         };
 
-        ValueHolder<V> compute = store.compute(key, fn, replaceEqual, invokeWriter);
+        ValueHolder<V> compute = store.computeAndGet(key, fn, replaceEqual, invokeWriter);
         V newValue = compute == null ? null : compute.get();
         if (withStatsAndEvents.get()) {
           if (newValue == null) {

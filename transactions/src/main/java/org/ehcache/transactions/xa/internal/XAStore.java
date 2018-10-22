@@ -517,7 +517,7 @@ public class XAStore<K, V> implements WrapperStore<K, V> {
   }
 
   @Override
-  public ValueHolder<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
+  public ValueHolder<V> computeAndGet(K key, BiFunction<? super K, ? super V, ? extends V> mappingFunction, Supplier<Boolean> replaceEqual, Supplier<Boolean> invokeWriter) throws StoreAccessException {
     checkKey(key);
     XATransactionContext<K, V> currentContext = getCurrentContext();
     if (currentContext.touched(key)) {
@@ -696,7 +696,7 @@ public class XAStore<K, V> implements WrapperStore<K, V> {
     for (K key : keys) {
       checkKey(key);
 
-      final ValueHolder<V> newValue = compute(key, (k, oldValue) -> {
+      final ValueHolder<V> newValue = computeAndGet(key, (k, oldValue) -> {
         final Set<Map.Entry<K, V>> entrySet = Collections.singletonMap(k, oldValue).entrySet();
         final Iterable<? extends Map.Entry<? extends K, ? extends V>> entries = remappingFunction.apply(entrySet);
         final java.util.Iterator<? extends Map.Entry<? extends K, ? extends V>> iterator = entries.iterator();
@@ -779,7 +779,7 @@ public class XAStore<K, V> implements WrapperStore<K, V> {
     }
 
     @Override
-    public <K, V> Store<K, V> createStore(boolean useLoaderInAtomics, Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
+    public <K, V> Store<K, V> createStore(Configuration<K, V> storeConfig, ServiceConfiguration<?>... serviceConfigs) {
       Set<ResourceType.Core> supportedTypes = EnumSet.allOf(ResourceType.Core.class);
 
       Set<ResourceType<?>> configuredTypes = storeConfig.getResourcePools().getResourceTypeSet();
@@ -940,7 +940,7 @@ public class XAStore<K, V> implements WrapperStore<K, V> {
       Store.Configuration<K, SoftLock<V>> underlyingStoreConfig = new StoreConfigurationImpl<>(storeConfig.getKeyType(), softLockClass, evictionAdvisor,
         storeConfig.getClassLoader(), expiry, storeConfig.getResourcePools(), storeConfig.getDispatcherConcurrency(), storeConfig
         .getKeySerializer(), softLockValueCombinedSerializer);
-      Store<K, SoftLock<V>> underlyingStore = underlyingStoreProvider.createStore(useLoaderInAtomics, underlyingStoreConfig, underlyingServiceConfigs.toArray(new ServiceConfiguration<?>[0]));
+      Store<K, SoftLock<V>> underlyingStore = underlyingStoreProvider.createStore(underlyingStoreConfig, underlyingServiceConfigs.toArray(new ServiceConfiguration<?>[0]));
 
       // create the XA store
       TransactionManagerWrapper transactionManagerWrapper = transactionManagerProvider.getTransactionManagerWrapper();

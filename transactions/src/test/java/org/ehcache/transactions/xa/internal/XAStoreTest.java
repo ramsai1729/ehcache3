@@ -891,19 +891,19 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return "un";
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed2.get(), equalTo("un"));
-      Store.ValueHolder<String> computed3 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed3 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("un"));
         return null;
@@ -916,13 +916,13 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       }, SUPPLY_FALSE, SUPPLY_FALSE);
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return null;
@@ -935,13 +935,13 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return null;
@@ -954,13 +954,13 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "one";
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed1.get(), equalTo("one"));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("one"));
         return "un";
@@ -973,7 +973,7 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("un"));
         return "eins";
@@ -986,7 +986,7 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("eins"));
         return null;
@@ -999,19 +999,19 @@ public class XAStoreTest {
 
     testTransactionManager.begin();
     {
-      Store.ValueHolder<String> computed1 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed1 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, equalTo("eins"));
         return null;
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed1, is(nullValue()));
-      Store.ValueHolder<String> computed2 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed2 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return null;
       }, SUPPLY_TRUE, SUPPLY_FALSE);
       assertThat(computed2, is(nullValue()));
-      Store.ValueHolder<String> computed3 = xaStore.compute(1L, (aLong, s) -> {
+      Store.ValueHolder<String> computed3 = xaStore.computeAndGet(1L, (aLong, s) -> {
         assertThat(aLong, is(1L));
         assertThat(s, is(nullValue()));
         return "uno";

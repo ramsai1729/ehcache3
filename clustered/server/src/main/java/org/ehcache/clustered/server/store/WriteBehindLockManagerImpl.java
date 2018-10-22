@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ehcache.clustered.server.offheap;
+package org.ehcache.clustered.server.store;
 
-import java.io.Closeable;
-import java.nio.ByteBuffer;
+import org.terracotta.entity.ClientDescriptor;
 
-import org.ehcache.clustered.common.internal.store.Chain;
+import java.util.List;
+import java.util.function.Consumer;
 
-public interface InternalChain extends Closeable {
-
-  Chain detach();
-
-  boolean append(ByteBuffer element);
-
-  ReplaceResponse replace(Chain expected, Chain replacement);
-
+public class WriteBehindLockManagerImpl extends LockManagerImpl {
   @Override
-  void close();
-
-  enum ReplaceResponse {
-    MATCH_AND_REPLACED,
-    MATCH_BUT_NOT_REPLACED,
-    EXACT_MATCH_AND_REPLACED,
-    NO_MATCH
+  public void sweepLocksForClient(ClientDescriptor client, Consumer<List<Long>> removeHeldKeys) {
   }
 }

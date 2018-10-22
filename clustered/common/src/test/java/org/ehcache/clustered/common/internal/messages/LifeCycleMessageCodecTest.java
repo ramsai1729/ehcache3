@@ -62,7 +62,7 @@ public class LifeCycleMessageCodecTest {
     PoolAllocation.Dedicated dedicated = new PoolAllocation.Dedicated("dedicate", 420000L);
     ServerStoreConfiguration configuration = new ServerStoreConfiguration(dedicated, "java.lang.Long", "java.lang.String",
       "org.ehcache.impl.serialization.LongSerializer", "org.ehcache.impl.serialization.StringSerializer",
-      Consistency.STRONG, false);
+      Consistency.STRONG, false, false);
     LifecycleMessage message = factory.validateServerStore("store1", configuration);
 
     byte[] encoded = codec.encode(message);
@@ -81,7 +81,7 @@ public class LifeCycleMessageCodecTest {
     PoolAllocation.Shared shared = new PoolAllocation.Shared("shared");
     ServerStoreConfiguration configuration = new ServerStoreConfiguration(shared, "java.lang.Long", "java.lang.String",
       "org.ehcache.impl.serialization.LongSerializer", "org.ehcache.impl.serialization.StringSerializer",
-      Consistency.STRONG, false);
+      Consistency.STRONG, false, false);
     LifecycleMessage message = factory.validateServerStore("store1", configuration);
 
     byte[] encoded = codec.encode(message);
@@ -99,7 +99,7 @@ public class LifeCycleMessageCodecTest {
     PoolAllocation.Unknown unknown = new PoolAllocation.Unknown();
     ServerStoreConfiguration configuration = new ServerStoreConfiguration(unknown, "java.lang.Long", "java.lang.String",
       "org.ehcache.impl.serialization.LongSerializer", "org.ehcache.impl.serialization.StringSerializer",
-      Consistency.STRONG, false);
+      Consistency.STRONG, false, false);
     LifecycleMessage message = factory.validateServerStore("store1", configuration);
 
     byte[] encoded = codec.encode(message);

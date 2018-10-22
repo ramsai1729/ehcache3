@@ -184,7 +184,7 @@ public class ClusterTierActiveEntity implements ActiveServerEntity<EhcacheEntity
     management = new ClusterTierManagement(registry, stateService, true, storeIdentifier, entityConfiguration.getManagerIdentifier());
     chainCompactionLimit = Integer.getInteger(CHAIN_COMPACTION_THRESHOLD_PROP, DEFAULT_CHAIN_COMPACTION_THRESHOLD);
     if (configuration.isLoaderWriterConfigured()) {
-      lockManager = new LockManagerImpl();
+      lockManager = configuration.isWriteBehindConfigured() ? new WriteBehindLockManagerImpl() : new LockManagerImpl();
     } else {
       lockManager = new NoopLockManager();
     }

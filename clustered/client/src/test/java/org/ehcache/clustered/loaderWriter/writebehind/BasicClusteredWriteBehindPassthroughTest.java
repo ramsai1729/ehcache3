@@ -45,7 +45,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
-public class BasicClusteredWriteBehindTest {
+public class BasicClusteredWriteBehindPassthroughTest {
 
   private static final URI CLUSTER_URI = URI.create("terracotta://example.com:9540/clustered-write-behind");
 
@@ -70,87 +70,91 @@ public class BasicClusteredWriteBehindTest {
 
   @Test
   public void testBasicClusteredWriteBehind() {
-    PersistentCacheManager cacheManager = createCacheManager();
-    Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
+    try (PersistentCacheManager cacheManager = createCacheManager()) {
+      Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
 
-    for (int i = 0; i < 10; i++) {
-      put(cache, String.valueOf(i));
+      for (int i = 0; i < 10; i++) {
+        put(cache, String.valueOf(i));
+      }
+
+      assertValue(cache, String.valueOf(9));
+
+      verifyRecords(cache);
+      cache.clear();
     }
-
-    assertValue(cache, String.valueOf(9));
-
-    verifyRecords(cache);
-    cache.clear();
   }
 
   @Test
   public void testWriteBehindMultipleClients() {
-    PersistentCacheManager cacheManager1 = createCacheManager();
-    PersistentCacheManager cacheManager2 = createCacheManager();
-    Cache<Long, String> client1 = cacheManager1.getCache(CACHE_NAME, Long.class, String.class);
-    Cache<Long, String> client2 = cacheManager2.getCache(CACHE_NAME, Long.class, String.class);
+    try (PersistentCacheManager cacheManager1 = createCacheManager();
+         PersistentCacheManager cacheManager2 = createCacheManager()) {
+      Cache<Long, String> client1 = cacheManager1.getCache(CACHE_NAME, Long.class, String.class);
+      Cache<Long, String> client2 = cacheManager2.getCache(CACHE_NAME, Long.class, String.class);
 
-    put(client1, "The one from client1");
-    put(client2, "The one one from client2");
-    assertValue(client1, "The one one from client2");
-    remove(client1);
-    put(client2, "The one from client2");
-    put(client1, "The one one from client1");
-    assertValue(client2, "The one one from client1");
-    remove(client2);
-    assertValue(client1, null);
-    put(client1, "The one from client1");
-    put(client1, "The one one from client1");
-    remove(client2);
-    put(client2, "The one from client2");
-    put(client2, "The one one from client2");
-    remove(client1);
-    assertValue(client2, null);
+      put(client1, "The one from client1");
+      put(client2, "The one one from client2");
+      assertValue(client1, "The one one from client2");
+      remove(client1);
+      put(client2, "The one from client2");
+      put(client1, "The one one from client1");
+      assertValue(client2, "The one one from client1");
+      remove(client2);
+      assertValue(client1, null);
+      put(client1, "The one from client1");
+      put(client1, "The one one from client1");
+      remove(client2);
+      put(client2, "The one from client2");
+      put(client2, "The one one from client2");
+      remove(client1);
+      assertValue(client2, null);
 
-    verifyRecords(client1);
-    client1.clear();
+      verifyRecords(client1);
+      client1.clear();
+    }
   }
 
   @Test
   public void testClusteredWriteBehindCAS() {
-    PersistentCacheManager cacheManager = createCacheManager();
-    Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
-    putIfAbsent(cache, "First value", true);
-    assertValue(cache,"First value");
-    putIfAbsent(cache, "Second value", false);
-    assertValue(cache, "First value");
-    put(cache, "First value again");
-    assertValue(cache, "First value again");
-    replace(cache, "Replaced First value", true);
-    assertValue(cache, "Replaced First value");
-    replace(cache, "Replaced First value", "Replaced First value again", true);
-    assertValue(cache, "Replaced First value again");
-    replace(cache, "Replaced First", "Tried Replacing First value again", false);
-    assertValue(cache, "Replaced First value again");
-    condRemove(cache, "Replaced First value again", true);
-    assertValue(cache, null);
-    replace(cache, "Trying to replace value", false);
-    assertValue(cache, null);
-    put(cache, "new value", true);
-    assertValue(cache, "new value");
-    condRemove(cache, "new value", false);
+    try (PersistentCacheManager cacheManager = createCacheManager()) {
+      Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
+      putIfAbsent(cache, "First value", true);
+      assertValue(cache, "First value");
+      putIfAbsent(cache, "Second value", false);
+      assertValue(cache, "First value");
+      put(cache, "First value again");
+      assertValue(cache, "First value again");
+      replace(cache, "Replaced First value", true);
+      assertValue(cache, "Replaced First value");
+      replace(cache, "Replaced First value", "Replaced First value again", true);
+      assertValue(cache, "Replaced First value again");
+      replace(cache, "Replaced First", "Tried Replacing First value again", false);
+      assertValue(cache, "Replaced First value again");
+      condRemove(cache, "Replaced First value again", true);
+      assertValue(cache, null);
+      replace(cache, "Trying to replace value", false);
+      assertValue(cache, null);
+      put(cache, "new value", true);
+      assertValue(cache, "new value");
+      condRemove(cache, "new value", false);
 
-    verifyRecords(cache);
-    cache.clear();
+      verifyRecords(cache);
+      cache.clear();
+    }
   }
 
   @Test
   public void testClusteredWriteBehindLoading() {
-    CacheManager cacheManager = createCacheManager();
-    Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
+    try (CacheManager cacheManager = createCacheManager()) {
+      Cache<Long, String> cache = cacheManager.getCache(CACHE_NAME, Long.class, String.class);
 
-    put(cache,"Some value");
-    tryFlushingUpdatesToSOR(cache);
-    cache.clear();
+      put(cache, "Some value");
+      tryFlushingUpdatesToSOR(cache);
+      cache.clear();
 
-    assertThat(cache.get(KEY), notNullValue());
+      assertThat(cache.get(KEY), notNullValue());
 
-    cache.clear();
+      cache.clear();
+    }
   }
 
   private void assertValue(Cache<Long, String> cache, String value) {

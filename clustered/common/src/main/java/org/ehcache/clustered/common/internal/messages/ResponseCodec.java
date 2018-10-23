@@ -105,9 +105,6 @@ public class ResponseCodec {
     .enm(RESPONSE_TYPE_FIELD_NAME, RESPONSE_TYPE_FIELD_INDEX, EHCACHE_RESPONSE_TYPES_ENUM_MAPPING)
     .struct(CHAIN_FIELD, 20, CHAIN_STRUCT)
     .build();
-  private static final Struct LOCK_FAILURE_STRUCT = newStructBuilder()
-    .enm(RESPONSE_TYPE_FIELD_NAME, RESPONSE_TYPE_FIELD_INDEX, EHCACHE_RESPONSE_TYPES_ENUM_MAPPING)
-    .build();
 
   public byte[] encode(EhcacheEntityResponse response) {
     switch (response.getResponseType()) {

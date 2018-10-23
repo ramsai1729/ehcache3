@@ -400,7 +400,7 @@ public class TieredStore<K, V> implements Store<K, V> {
       return cachingTierProvider;
     }
 
-    private AuthoritativeTier.Provider getAuthoritativeTierProvider(ResourceType<?> authorityResource, List<ServiceConfiguration<?>> enhancedServiceConfigs) {
+    AuthoritativeTier.Provider getAuthoritativeTierProvider(ResourceType<?> authorityResource, List<ServiceConfiguration<?>> enhancedServiceConfigs) {
       AuthoritativeTier.Provider authoritativeTierProvider = null;
       Collection<AuthoritativeTier.Provider> authorityProviders = serviceProvider.getServicesOfType(AuthoritativeTier.Provider.class);
       int highestRank = 0;

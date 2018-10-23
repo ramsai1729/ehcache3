@@ -32,9 +32,24 @@ public interface InternalChain extends Closeable {
   void close();
 
   enum ReplaceResponse {
+    /**
+     * Denotes head of the current chain matches the expected chain and it was replaced with replacement chain
+     */
     MATCH_AND_REPLACED,
+
+    /**
+     * Denotes head of the current chain matches the expected chain and it was not replaced with replacement chain
+     */
     MATCH_BUT_NOT_REPLACED,
+
+    /**
+     * Denotes current chain matches the expected chain and it was replaced with replacement chain
+     */
     EXACT_MATCH_AND_REPLACED,
+
+    /**
+     * Denotes head of the current chain doesn't not match the expected chain
+     */
     NO_MATCH
   }
 }

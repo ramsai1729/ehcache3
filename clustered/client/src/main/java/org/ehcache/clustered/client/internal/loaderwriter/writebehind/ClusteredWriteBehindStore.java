@@ -16,7 +16,6 @@
 package org.ehcache.clustered.client.internal.loaderwriter.writebehind;
 
 import org.ehcache.clustered.client.internal.loaderwriter.ClusteredLoaderWriterStore;
-import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.ClusteredStore;
 import org.ehcache.clustered.client.internal.store.ClusteredValueHolder;
 import org.ehcache.clustered.client.internal.store.ResolvedChain;
@@ -25,7 +24,6 @@ import org.ehcache.clustered.client.internal.store.lock.LockManager;
 import org.ehcache.clustered.client.internal.store.operations.ChainResolver;
 import org.ehcache.clustered.client.internal.store.operations.ConditionalRemoveOperation;
 import org.ehcache.clustered.client.internal.store.operations.ConditionalReplaceOperation;
-import org.ehcache.clustered.client.internal.store.operations.Operation;
 import org.ehcache.clustered.client.internal.store.operations.PutIfAbsentOperation;
 import org.ehcache.clustered.client.internal.store.operations.PutOperation;
 import org.ehcache.clustered.client.internal.store.operations.PutWithWriterOperation;
@@ -35,7 +33,6 @@ import org.ehcache.clustered.client.internal.store.operations.Result;
 import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.client.service.ClusteringService;
 import org.ehcache.clustered.common.internal.store.Chain;
-import org.ehcache.clustered.common.internal.store.Element;
 import org.ehcache.config.ResourceType;
 import org.ehcache.core.spi.store.tiering.AuthoritativeTier;
 import org.ehcache.core.spi.time.TimeSource;
@@ -48,11 +45,10 @@ import org.ehcache.spi.service.ServiceDependencies;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static org.ehcache.core.exceptions.StorePassThroughException.handleException;
@@ -61,7 +57,7 @@ import static org.ehcache.core.spi.service.ServiceUtils.findSingletonAmongst;
 public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implements AuthoritativeTier<K, V> {
 
   private final CacheLoaderWriter<? super K, V> cacheLoaderWriter;
-  private final ClusteredWriteBehind clusteredWriteBehind;
+  private final ClusteredWriteBehind<K, V> clusteredWriteBehind;
 
   private ClusteredWriteBehindStore(Configuration<K, V> config,
                                     OperationsCodec<K, V> codec,
@@ -71,15 +67,24 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
                                     ExecutorService executorService) {
     super(config, codec, resolver, timeSource);
     this.cacheLoaderWriter = loaderWriter;
-    this.clusteredWriteBehind = new ClusteredWriteBehind(executorService,
+    this.clusteredWriteBehind = new ClusteredWriteBehind<>(this, executorService,
                                                          timeSource,
                                                          resolver,
                                                          this.cacheLoaderWriter,
                                                          codec);
   }
 
-  private LockManager getProxy() {
-    return (LockManager) storeProxy;
+
+  Chain lock(long hash) throws TimeoutException {
+    return ((LockManager) storeProxy).lock(hash);
+  }
+
+  void unlock(long hash) throws TimeoutException {
+    ((LockManager) storeProxy).unlock(hash);
+  }
+
+  void replaceAtHead(long key, Chain expected, Chain replacement) {
+    storeProxy.replaceAtHead(key, expected, replacement);
   }
 
   @Override
@@ -102,8 +107,7 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
         return holder;
       } else {
         long hash = extractLongKey(key);
-        boolean unlocked = false;
-        getProxy().lock(hash);
+        lock(hash);
         try {
           V value;
           try {
@@ -115,12 +119,9 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
             return null;
           }
           append(key, value);
-          unlocked = true;
           return new ClusteredValueHolder<>(value);
         } finally {
-          if (!unlocked) {
-            getProxy().unlock(hash);
-          }
+          unlock(hash);
         }
       }
     } catch (RuntimeException re) {
@@ -261,74 +262,6 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
     return new WriteBehindServerCallback(delegate);
   }
 
-  public class ClusteredWriteBehind {
-    private final ExecutorService executorService;
-    private final CacheLoaderWriter<? super K, V> cacheLoaderWriter;
-    private final OperationsCodec<K, V> codec;
-    private final ChainResolver<K, V> resolver;
-    private final TimeSource timeSource;
-
-    ClusteredWriteBehind(ExecutorService executorService,
-                         TimeSource timeSource, ChainResolver<K, V> resolver,
-                         CacheLoaderWriter<? super K, V> cacheLoaderWriter,
-                         OperationsCodec<K, V> codec) {
-      this.executorService = executorService;
-      this.resolver = resolver;
-      this.cacheLoaderWriter = cacheLoaderWriter;
-      this.codec = codec;
-      this.timeSource = timeSource;
-    }
-
-    void flushWriteBehindQueue(Chain ignored, long hash) {
-      executorService.submit(() -> {
-        try {
-          Chain chain = getProxy().lock(hash);
-          try {
-            if (!chain.isEmpty()) {
-              Map<K, PutOperation<K, V>> currentState = new HashMap<>();
-              for (Element element : chain) {
-                ByteBuffer payload = element.getPayload();
-                Operation<K, V> operation = codec.decode(payload);
-                K key = operation.getKey();
-                PutOperation<K, V> result = resolver.applyOperation(key,
-                                                                    currentState.get(key),
-                                                                    operation,
-                                                                    timeSource.getTimeMillis());
-                try {
-                  if (result != null) {
-                    if (result != currentState.get(key) && !(operation instanceof PutOperation)) {
-                      cacheLoaderWriter.write(result.getKey(), result.getValue());
-                    }
-                    currentState.put(key, result.asOperationExpiringAt(result.expirationTime()));
-                  } else {
-                    if (currentState.get(key) != null && (operation instanceof RemoveOperation
-                                                          || operation instanceof ConditionalRemoveOperation)) {
-                      cacheLoaderWriter.delete(key);
-                    }
-                    currentState.put(key, null);
-                  }
-                } catch (Exception e) {
-                  throw new RuntimeException(e);
-                }
-              }
-
-              ChainBuilder builder = new ChainBuilder();
-              for (PutOperation<K, V> operation : currentState.values()) {
-                builder = builder.add(codec.encode(operation));
-              }
-
-              storeProxy.replaceAtHead(hash, chain, builder.build());
-            }
-          } finally {
-            getProxy().unlock(hash);
-          }
-        } catch (TimeoutException e) {
-          throw new RuntimeException(e);
-        }
-      });
-    }
-  }
-
   /**
    * Provider of {@link ClusteredWriteBehindStore} instances.
    */
@@ -345,7 +278,7 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
       if (writeBehindConfiguration != null) {
         ExecutorService executorService =
           executionService.getOrderedExecutor(writeBehindConfiguration.getThreadPoolAlias(),
-                                              new ArrayBlockingQueue<>(1));
+                                              new LinkedBlockingQueue<>());
         return new ClusteredWriteBehindStore<>(storeConfig,
                                                codec,
                                                resolver,

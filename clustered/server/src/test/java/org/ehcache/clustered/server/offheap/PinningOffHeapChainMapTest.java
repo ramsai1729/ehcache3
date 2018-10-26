@@ -172,6 +172,7 @@ public class PinningOffHeapChainMapTest {
 
   public static Chain chain(ByteBuffer... buffers) {
     final List<Element> list = new ArrayList<>();
+    list.add(ByteBuffer.wrap(new byte[] {0b1})::asReadOnlyBuffer);
     for (ByteBuffer b : buffers) {
       list.add(b::asReadOnlyBuffer);
     }
@@ -198,6 +199,11 @@ public class PinningOffHeapChainMapTest {
       @Override
       public int length() {
         return elements.size();
+      }
+
+      @Override
+      public boolean isPinned() {
+        return true;
       }
     };
   }

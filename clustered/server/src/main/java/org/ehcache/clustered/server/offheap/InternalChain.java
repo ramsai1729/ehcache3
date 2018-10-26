@@ -28,6 +28,8 @@ public interface InternalChain extends Closeable {
 
   ReplaceResponse replace(Chain expected, Chain replacement);
 
+  default void updatePinning(boolean pinned) {}
+
   @Override
   void close();
 

@@ -56,5 +56,9 @@ public interface Chain extends Iterable<Element> {
    * @return the number of elements in this chain
    */
   int length();
+
+  default boolean isPinned() {
+    return false;
+  }
 }
 

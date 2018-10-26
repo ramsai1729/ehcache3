@@ -208,9 +208,10 @@ public class ClusteredWriteBehindTest {
   }
 
   private Chain makeChain(List<EventInfo> expected, OperationsCodec<Long, String> operationsCodec) {
-    ByteBuffer[] byteBuffers = new ByteBuffer[expected.size()];
-    for (int i = 0; i < byteBuffers.length; i++) {
-      byteBuffers[i] = operationsCodec.encode(expected.get(i).operation);
+    ByteBuffer[] byteBuffers = new ByteBuffer[expected.size() + 1];
+    byteBuffers[0] = ByteBuffer.allocate(1).put(0, (byte)1);
+    for (int i = 1; i < byteBuffers.length; i++) {
+      byteBuffers[i] = operationsCodec.encode(expected.get(i - 1).operation);
     }
     return chain(byteBuffers);
   }

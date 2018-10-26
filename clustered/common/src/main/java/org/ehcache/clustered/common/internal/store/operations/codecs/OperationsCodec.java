@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations.codecs;
+package org.ehcache.clustered.common.internal.store.operations.codecs;
 
-import org.ehcache.clustered.client.internal.store.operations.Operation;
-import org.ehcache.clustered.client.internal.store.operations.OperationCode;
+import org.ehcache.clustered.common.internal.store.operations.Operation;
+import org.ehcache.clustered.common.internal.store.operations.OperationCode;
 import org.ehcache.spi.serialization.Serializer;
 
 import java.nio.ByteBuffer;
@@ -34,12 +34,28 @@ public class OperationsCodec<K, V> {
   }
 
   public ByteBuffer encode(Operation<K, V> operation) {
-    return operation.encode(keySerializer, valueSerializer);
+    ByteBuffer byteBuffer = operation.encode(keySerializer, valueSerializer);
+    ByteBuffer toReturn = ByteBuffer.allocate(1 + byteBuffer.remaining());
+    if (operation.shouldBePinned()) {
+      toReturn.put((byte)1);
+    } else {
+      toReturn.put((byte)0);
+    }
+    toReturn.put(byteBuffer);
+    toReturn.flip();
+
+    return toReturn;
+  }
+
+  public static boolean shouldBePinned(ByteBuffer byteBuffer) {
+    return byteBuffer.get(0) == 1;
   }
 
   public Operation<K, V> decode(ByteBuffer buffer) {
+    buffer.get(); // discard first byte
     OperationCode opCode = OperationCode.valueOf(buffer.get());
     buffer.rewind();
+    buffer.get(); // discard first byte again
     return opCode.decode(buffer, keySerializer, valueSerializer);
   }
 

@@ -14,42 +14,37 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations;
+package org.ehcache.clustered.common.internal.store.operations;
 
 import org.ehcache.spi.serialization.Serializer;
 
 import java.nio.ByteBuffer;
 
-public class PutIfAbsentOperation<K, V> extends BaseKeyValueOperation<K, V> implements Result<K, V> {
+public class ConditionalRemoveOperation<K, V> extends BaseKeyValueOperation<K, V> {
 
-  public PutIfAbsentOperation(final K key, final V value, final long timeStamp) {
+  public ConditionalRemoveOperation(final K key, final V value, final long timeStamp) {
     super(key, value, timeStamp);
   }
 
-  PutIfAbsentOperation(final ByteBuffer buffer, final Serializer<K> keySerializer, final Serializer<V> valueSerializer) {
+  ConditionalRemoveOperation(final ByteBuffer buffer, final Serializer<K> keySerializer, final Serializer<V> valueSerializer) {
     super(buffer, keySerializer, valueSerializer);
   }
 
   @Override
   public OperationCode getOpCode() {
-    return OperationCode.PUT_IF_ABSENT;
+    return OperationCode.REMOVE_CONDITIONAL;
   }
 
-  /**
-   * PutIfAbsent operation succeeds only when there is no previous operation
-   * for the same key.
-   */
   @Override
   public Result<K, V> apply(final Result<K, V> previousOperation) {
-    if(previousOperation == null) {
-      return this;
+    if (previousOperation == null) {
+      return null;
     } else {
-      return previousOperation;
+      if (getValue().equals(previousOperation.getValue())) {
+        return null;
+      } else {
+        return previousOperation;
+      }
     }
-  }
-
-  @Override
-  public PutOperation<K, V> asOperationExpiringAt(long expirationTime) {
-    return new PutOperation<>(this, -expirationTime);
   }
 }

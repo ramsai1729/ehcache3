@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations;
+package org.ehcache.clustered.common.internal.store.operations;
 
 import org.ehcache.spi.serialization.Serializer;
 
@@ -48,5 +48,9 @@ public interface Operation<K, V> {
    * Time when the operations installed value expires
    */
   long expirationTime();
+
+  default boolean shouldBePinned() {
+    return true;
+  }
 
 }

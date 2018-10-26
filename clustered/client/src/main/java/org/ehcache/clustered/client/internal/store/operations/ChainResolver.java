@@ -18,14 +18,15 @@ package org.ehcache.clustered.client.internal.store.operations;
 
 import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.ResolvedChain;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ehcache.clustered.common.internal.store.operations.Operation;
+import org.ehcache.clustered.common.internal.store.operations.PutOperation;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -63,8 +64,12 @@ public abstract class ChainResolver<K, V> {
     PutOperation<K, V> result = null;
     ChainBuilder newChainBuilder = new ChainBuilder();
     boolean matched = false;
-    for (Element element : chain) {
-      ByteBuffer payload = element.getPayload();
+    Iterator<Element> iterator = chain.iterator();
+    if (chain.length() >= 1) {
+      iterator.next();
+    }
+    while (iterator.hasNext()) {
+      ByteBuffer payload = iterator.next().getPayload();
       Operation<K, V> operation = codec.decode(payload);
 
       if(key.equals(operation.getKey())) {

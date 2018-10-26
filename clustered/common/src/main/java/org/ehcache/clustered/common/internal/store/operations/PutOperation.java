@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations;
+package org.ehcache.clustered.common.internal.store.operations;
 
 import org.ehcache.spi.serialization.Serializer;
 
@@ -60,5 +60,10 @@ public class PutOperation<K, V> extends BaseKeyValueOperation<K, V> implements R
     } else {
       return new PutOperation<>(this, -expirationTime);
     }
+  }
+
+  @Override
+  public boolean shouldBePinned() {
+    return false;
   }
 }

@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations;
+package org.ehcache.clustered.common.internal.store.operations;
 
 import org.ehcache.clustered.client.TestTimeSource;
 import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.ResolvedChain;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
+import org.ehcache.clustered.client.internal.store.operations.ExpiryChainResolver;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
 import org.ehcache.expiry.ExpiryPolicy;
@@ -29,8 +30,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.hamcrest.Matchers.nullValue;
@@ -274,6 +277,7 @@ public class ExpiryChainResolverExpiryTest {
 
   private Chain getChainFromOperations(List<Operation<Long, String>> operations) {
     ChainBuilder chainBuilder = new ChainBuilder();
+    chainBuilder = chainBuilder.add(ByteBuffer.wrap(new byte[]{0b0}));
     for(Operation<Long, String> operation: operations) {
       chainBuilder = chainBuilder.add(codec.encode(operation));
     }
@@ -282,8 +286,10 @@ public class ExpiryChainResolverExpiryTest {
 
   private List<Operation<Long, String>> getOperationsListFromChain(Chain chain) {
     List<Operation<Long, String>> list = new ArrayList<>();
-    for (Element element : chain) {
-      Operation<Long, String> operation = codec.decode(element.getPayload());
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) iterator.next();
+    while (iterator.hasNext()) {
+      Operation<Long, String> operation = codec.decode(iterator.next().getPayload());
       list.add(operation);
     }
     return list;

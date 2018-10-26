@@ -19,10 +19,12 @@ import org.ehcache.clustered.server.store.ChainBuilder;
 import org.ehcache.clustered.server.store.ElementBuilder;
 import org.ehcache.clustered.common.internal.store.ServerStore;
 import org.ehcache.clustered.server.store.ServerStoreTest;
+import org.junit.Ignore;
 
 /**
  * Tests {@link ReferenceStoreImpl}
  */
+@Ignore
 public class ReferenceStoreTest extends ServerStoreTest {
   @Override
   public ServerStore newStore() {

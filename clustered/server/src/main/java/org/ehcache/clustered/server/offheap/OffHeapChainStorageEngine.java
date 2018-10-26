@@ -17,6 +17,7 @@ package org.ehcache.clustered.server.offheap;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -91,8 +92,8 @@ public class OffHeapChainStorageEngine<K> implements ChainStorageEngine<K>, Bina
   }
 
   @Override
-  public InternalChain newChain(ByteBuffer element) {
-    return new GenesisLink(element);
+  public InternalChain newChain(ByteBuffer element, boolean pinned) {
+    return new GenesisLink(element, pinned);
   }
 
   @Override
@@ -414,6 +415,10 @@ public class OffHeapChainStorageEngine<K> implements ChainStorageEngine<K>, Bina
       return elements.iterator();
     }
 
+    @Override
+    public boolean isPinned() {
+      return elements.get(0).getPayload().get(0) == 1;
+    }
   }
 
   /**
@@ -448,15 +453,17 @@ public class OffHeapChainStorageEngine<K> implements ChainStorageEngine<K>, Bina
    * Represents a simple {@link GenesisChain} that contains a single link.
    */
   private static class GenesisLink extends GenesisChain {
+    private final Element head;
     private final Element element;
 
-    public GenesisLink(ByteBuffer buffer) {
+    public GenesisLink(ByteBuffer buffer, boolean pinned) {
+      head = () -> ByteBuffer.wrap(new byte[]{ (byte)(pinned ? 1 : 0)});
       element = () -> buffer;
     }
 
     @Override
     protected Iterator<Element> iterator() {
-      return Collections.singleton(element).iterator();
+      return Arrays.asList(head, element).iterator();
     }
   }
 
@@ -491,6 +498,12 @@ public class OffHeapChainStorageEngine<K> implements ChainStorageEngine<K>, Bina
     AttachedInternalChain(long address) {
       this.chain = address;
       OffHeapChainStorageEngine.this.activeChains.add(this);
+    }
+
+    @Override
+    public void updatePinning(boolean pinned) {
+      long address = chain + OffHeapChainStorageEngine.this.totalChainHeaderSize + ELEMENT_HEADER_SIZE;
+      storage.writeBuffer(address, ByteBuffer.wrap(new byte[]{ (byte)(pinned ? 1 : 0) }));
     }
 
     @Override

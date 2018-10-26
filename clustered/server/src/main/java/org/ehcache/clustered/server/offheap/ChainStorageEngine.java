@@ -21,6 +21,9 @@ import org.terracotta.offheapstore.storage.StorageEngine;
 import java.nio.ByteBuffer;
 
 public interface ChainStorageEngine<K> extends StorageEngine<K, InternalChain> {
-  InternalChain newChain(ByteBuffer element);
+  default InternalChain newChain(ByteBuffer element) {
+    return newChain(element, false);
+  }
+  InternalChain newChain(ByteBuffer element, boolean pinned);
   InternalChain newChain(Chain chain);
 }

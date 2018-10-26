@@ -18,6 +18,7 @@ package org.ehcache.clustered.server.internal.messages;
 
 import org.ehcache.clustered.common.internal.messages.EhcacheMessageType;
 import org.ehcache.clustered.common.internal.store.Chain;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.ehcache.clustered.server.internal.messages.PassiveReplicationMessage.ChainReplicationMessage;
 import org.ehcache.clustered.server.internal.messages.PassiveReplicationMessage.ClearInvalidationCompleteMessage;
 import org.ehcache.clustered.server.internal.messages.PassiveReplicationMessage.InvalidationCompleteMessage;
@@ -39,7 +40,7 @@ public class PassiveReplicationMessageCodecTest {
 
   @Test
   public void testChainReplicationMessageCodec() {
-    Chain chain = getChain(false, createPayload(2L), createPayload(20L));
+    Chain chain = Util.getChain(false, createPayload(2L), createPayload(20L));
     ChainReplicationMessage chainReplicationMessage = new ChainReplicationMessage(2L, chain, 200L, 100L, 1L);
 
     byte[] encoded = codec.encode(chainReplicationMessage);

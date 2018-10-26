@@ -61,6 +61,7 @@ public abstract class ServerStoreTest {
 
   private static void assertChainAndReverseChainOnlyHave(Chain chain, long... payLoads) {
     Iterator<Element> elements = chain.iterator();
+    if (chain.length() > 1) elements.next();
     for (long payLoad : payLoads) {
       assertThat(readPayLoad(elements.next().getPayload()), is(Long.valueOf(payLoad)));
     }
@@ -71,6 +72,7 @@ public abstract class ServerStoreTest {
     for (int i = payLoads.length -1; i >= 0; i--) {
       assertThat(readPayLoad(reverseElements.next().getPayload()), is(Long.valueOf(payLoads[i])));
     }
+    reverseElements.next();
     assertThat(reverseElements.hasNext(), is(false));
   }
 
@@ -124,8 +126,10 @@ public abstract class ServerStoreTest {
     ServerStore store = newStore();
     populateStore(store);
     Chain chain = store.getAndAppend(1, createPayload(22));
-    for (Element element : chain) {
-      assertThat(readPayLoad(element.getPayload()), is(Long.valueOf(1)));
+    Iterator<Element> iterator = chain.iterator();
+    if (chain.length() > 1) iterator.next();
+    while (iterator.hasNext()){
+      assertThat(readPayLoad(iterator.next().getPayload()), is(Long.valueOf(1)));
     }
     chain = store.get(1);
     assertChainAndReverseChainOnlyHave(chain, 1, 22);

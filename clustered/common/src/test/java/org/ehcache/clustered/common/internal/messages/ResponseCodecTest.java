@@ -21,7 +21,6 @@ import org.ehcache.clustered.common.internal.store.Chain;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -58,8 +57,8 @@ public class ResponseCodecTest {
 
   @Test
   public void testGetResponseCodec() {
-    EhcacheEntityResponse getResponse = getResponse(getChain(false,
-        createPayload(1L), createPayload(11L), createPayload(111L)));
+    EhcacheEntityResponse getResponse = getResponse(org.ehcache.clustered.common.internal.store.Util.getChain(false,
+                                                                                                              createPayload(1L), createPayload(11L), createPayload(111L)));
 
     EhcacheEntityResponse decoded = RESPONSE_CODEC.decode(RESPONSE_CODEC.encode(getResponse));
 
@@ -153,8 +152,9 @@ public class ResponseCodecTest {
   @Test
   public void testResolveRequest() throws Exception {
     long hash = 42L;
-    EhcacheEntityResponse.ResolveRequest response = new EhcacheEntityResponse.ResolveRequest(hash, getChain(false,
-      createPayload(1L), createPayload(11L), createPayload(111L)));
+    EhcacheEntityResponse.ResolveRequest response = new EhcacheEntityResponse.ResolveRequest(hash, org.ehcache.clustered.common.internal.store.Util
+      .getChain(false,
+                createPayload(1L), createPayload(11L), createPayload(111L)));
 
     byte[] encoded = RESPONSE_CODEC.encode(response);
     EhcacheEntityResponse.ResolveRequest decodedResponse = (EhcacheEntityResponse.ResolveRequest) RESPONSE_CODEC.decode(encoded);
@@ -166,7 +166,8 @@ public class ResponseCodecTest {
 
   @Test
   public void testLockResponse() {
-    EhcacheEntityResponse.LockSuccess lockSuccess = new EhcacheEntityResponse.LockSuccess(getChain(false, createPayload(1L), createPayload(10L)));
+    EhcacheEntityResponse.LockSuccess lockSuccess = new EhcacheEntityResponse.LockSuccess(org.ehcache.clustered.common.internal.store.Util
+                                                                                            .getChain(false, createPayload(1L), createPayload(10L)));
 
     byte[] sucessEncoded = RESPONSE_CODEC.encode(lockSuccess);
     EhcacheEntityResponse.LockSuccess successDecoded = (EhcacheEntityResponse.LockSuccess) RESPONSE_CODEC.decode(sucessEncoded);

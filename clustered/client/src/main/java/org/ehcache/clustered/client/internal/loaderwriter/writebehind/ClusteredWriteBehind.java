@@ -17,11 +17,11 @@ package org.ehcache.clustered.client.internal.loaderwriter.writebehind;
 
 import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.operations.ChainResolver;
-import org.ehcache.clustered.client.internal.store.operations.ConditionalRemoveOperation;
-import org.ehcache.clustered.client.internal.store.operations.Operation;
-import org.ehcache.clustered.client.internal.store.operations.PutOperation;
-import org.ehcache.clustered.client.internal.store.operations.RemoveOperation;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
+import org.ehcache.clustered.common.internal.store.operations.ConditionalRemoveOperation;
+import org.ehcache.clustered.common.internal.store.operations.Operation;
+import org.ehcache.clustered.common.internal.store.operations.PutOperation;
+import org.ehcache.clustered.common.internal.store.operations.RemoveOperation;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
 import org.ehcache.core.spi.time.TimeSource;
@@ -29,6 +29,7 @@ import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -61,9 +62,12 @@ class ClusteredWriteBehind<K, V> {
         Chain chain = clusteredWriteBehindStore.lock(hash);
         try {
           if (!chain.isEmpty()) {
+            ChainBuilder builder = new ChainBuilder();
+            Iterator<Element> iterator = chain.iterator();
+            builder = builder.add(iterator.next().getPayload());
             Map<K, PutOperation<K, V>> currentState = new HashMap<>();
-            for (Element element : chain) {
-              ByteBuffer payload = element.getPayload();
+            while (iterator.hasNext()) {
+              ByteBuffer payload = iterator.next().getPayload();
               Operation<K, V> operation = codec.decode(payload);
               K key = operation.getKey();
               PutOperation<K, V> result = resolver.applyOperation(key,
@@ -88,12 +92,15 @@ class ClusteredWriteBehind<K, V> {
               }
             }
 
-            ChainBuilder builder = new ChainBuilder();
             for (PutOperation<K, V> operation : currentState.values()) {
               builder = builder.add(codec.encode(operation));
             }
 
-            clusteredWriteBehindStore.replaceAtHead(hash, chain, builder.build());
+            Chain build = builder.build();
+            if (build.length() == 1) {
+              build = new ChainBuilder().build();
+            }
+            clusteredWriteBehindStore.replaceAtHead(hash, chain, build);
           }
         } finally {
           clusteredWriteBehindStore.unlock(hash);

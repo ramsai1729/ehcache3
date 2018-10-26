@@ -18,6 +18,7 @@ package org.ehcache.clustered.server.internal.messages;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse;
 import org.ehcache.clustered.common.internal.messages.ResponseCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.ehcache.clustered.server.TestClientSourceId;
 import org.junit.Test;
 
@@ -41,7 +42,7 @@ public class EhcacheSyncMessageCodecTest {
   @Test
   public void testDataSyncMessageEncodeDecode() throws Exception {
     Map<Long, Chain> chainMap = new HashMap<>();
-    Chain chain = getChain(true, createPayload(10L), createPayload(100L), createPayload(1000L));
+    Chain chain = Util.getChain(true, createPayload(10L), createPayload(100L), createPayload(1000L));
     chainMap.put(1L, chain);
     chainMap.put(2L, chain);
     chainMap.put(3L, chain);

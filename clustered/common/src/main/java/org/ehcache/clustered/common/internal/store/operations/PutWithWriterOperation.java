@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.ehcache.clustered.client.internal.store.operations;
+package org.ehcache.clustered.common.internal.store.operations;
 
 import org.ehcache.spi.serialization.Serializer;
 
@@ -51,5 +51,10 @@ public class PutWithWriterOperation<K, V> extends BaseKeyValueOperation<K, V> im
   @Override
   public PutOperation<K, V> asOperationExpiringAt(long expirationTime) {
     return new PutOperation<>(this, -expirationTime);
+  }
+
+  @Override
+  public boolean shouldBePinned() {
+    return true;
   }
 }

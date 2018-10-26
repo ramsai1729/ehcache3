@@ -16,6 +16,7 @@
 package org.ehcache.clustered.server.offheap;
 
 import org.ehcache.clustered.common.internal.store.Chain;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.server.offheap.InternalChain.ReplaceResponse;
 import org.terracotta.offheapstore.paging.PageSource;
 import org.terracotta.offheapstore.storage.portability.Portability;
@@ -36,16 +37,24 @@ public class PinningOffHeapChainMap<K> extends OffHeapChainMap<K> {
     final Lock lock = heads.writeLock();
     lock.lock();
     try {
+      boolean shouldBePinned = OperationsCodec.shouldBePinned(element);
       while (true) {
         InternalChain chain = heads.get(key);
         if (chain == null) {
-          heads.putPinned(key, chainStorage.newChain(element));
+          if (shouldBePinned) {
+            heads.putPinned(key, chainStorage.newChain(element, true));
+          } else {
+            heads.put(key, chainStorage.newChain(element));
+          }
           return EMPTY_CHAIN;
         } else {
           try {
             Chain current = chain.detach();
             if (chain.append(element)) {
-              heads.setPinning(key, true);
+              if (!current.isPinned() && shouldBePinned) {
+                heads.setPinning(key, true);
+                chain.updatePinning(true);
+              }
               return current;
             } else {
               evict();
@@ -64,15 +73,24 @@ public class PinningOffHeapChainMap<K> extends OffHeapChainMap<K> {
     final Lock lock = heads.writeLock();
     lock.lock();
     try {
+      boolean shouldBePinned = OperationsCodec.shouldBePinned(element);
       while (true) {
         InternalChain chain = heads.get(key);
         if (chain == null) {
-          heads.putPinned(key, chainStorage.newChain(element));
+          if (shouldBePinned) {
+            heads.putPinned(key, chainStorage.newChain(element, true));
+          } else {
+            heads.put(key, chainStorage.newChain(element));
+          }
           return;
         } else {
           try {
             if (chain.append(element)) {
-              heads.setPinning(key, true);
+              Chain detached = chain.detach();
+              if (!detached.isPinned() && shouldBePinned) {
+                heads.setPinning(key, true);
+                chain.updatePinning(true);
+              }
               return;
             } else {
               evict();
@@ -105,7 +123,11 @@ public class PinningOffHeapChainMap<K> extends OffHeapChainMap<K> {
         }
       } else {
         if (!chain.isEmpty()) {
-          heads.putPinned(key, chainStorage.newChain(chain));
+          if (chain.isPinned()) {
+            heads.putPinned(key, chainStorage.newChain(chain));
+          } else {
+            heads.put(key, chainStorage.newChain(chain));
+          }
         }
       }
     } finally {
@@ -127,16 +149,26 @@ public class PinningOffHeapChainMap<K> extends OffHeapChainMap<K> {
           }
         } else {
           try {
-            heads.setPinning(key, false);
+            Chain detached = chain.detach();
+            if (detached.isPinned()) {
+              heads.setPinning(key, false);
+            }
             ReplaceResponse response = chain.replace(expected, replacement);
-            if (response != ReplaceResponse.MATCH_BUT_NOT_REPLACED) {
-              if (!shouldUnpin || response != ReplaceResponse.EXACT_MATCH_AND_REPLACED) {
-                heads.setPinning(key, true);
-              }
-              return;
-            } else {
+            if (response == ReplaceResponse.MATCH_BUT_NOT_REPLACED) {
               heads.setPinning(key, true);
               evict();
+            } else {
+              if (shouldUnpin && response == ReplaceResponse.EXACT_MATCH_AND_REPLACED) {
+                if (detached.isPinned()) {
+                  heads.get(key).updatePinning(false);
+                }
+              } else {
+                if (detached.isPinned()) {
+                  heads.setPinning(key, true);
+                  heads.get(key).updatePinning(true);
+                }
+              }
+              return;
             }
           } finally {
             chain.close();

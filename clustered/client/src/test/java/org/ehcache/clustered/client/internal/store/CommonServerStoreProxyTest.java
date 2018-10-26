@@ -21,12 +21,15 @@ import org.ehcache.clustered.client.internal.store.ServerStoreProxy.ServerCallba
 import org.ehcache.clustered.common.internal.ServerStoreConfiguration;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.ehcache.config.units.MemoryUnit;
 import org.ehcache.impl.serialization.LongSerializer;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.ehcache.clustered.common.internal.store.Util.createPayload;
 import static org.ehcache.clustered.common.internal.store.Util.getChain;
@@ -70,7 +73,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
 
     serverStoreProxy.append(2, createPayload(2));
 
-    Chain chain = serverStoreProxy.get(2);
+    Chain chain = wrap(serverStoreProxy.get(2));
     assertThat(chain.isEmpty(), is(false));
     assertThat(readPayLoad(chain.iterator().next().getPayload()), is(2L));
   }
@@ -84,7 +87,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
     serverStoreProxy.append(3L, createPayload(33L));
     serverStoreProxy.append(3L, createPayload(333L));
 
-    Chain chain = serverStoreProxy.get(3L);
+    Chain chain = wrap(serverStoreProxy.get(3L));
 
     assertThat(chain.isEmpty(), is(false));
 
@@ -99,7 +102,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
 
     assertThat(chain.isEmpty(), is(true));
 
-    chain = serverStoreProxy.get(4L);
+    chain = wrap(serverStoreProxy.get(4L));
 
     assertThat(chain.isEmpty(), is(false));
     assertChainHas(chain, 4L);
@@ -112,7 +115,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
     serverStoreProxy.getAndAppend(5L, createPayload(5L));
     serverStoreProxy.getAndAppend(5L, createPayload(55L));
     serverStoreProxy.getAndAppend(5L, createPayload(555L));
-    Chain chain = serverStoreProxy.getAndAppend(5l, createPayload(5555L));
+    Chain chain = wrap(serverStoreProxy.getAndAppend(5l, createPayload(5555L)));
 
     assertThat(chain.isEmpty(), is(false));
     assertChainHas(chain, 5L, 55L, 555L);
@@ -127,7 +130,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
     serverStoreProxy.append(20L, createPayload(20000L));
 
     Chain expect = serverStoreProxy.get(20L);
-    Chain update = getChain(false, createPayload(400L));
+    Chain update = Util.getChain(false, createPayload(400L));
 
     serverStoreProxy.replaceAtHead(20l, expect, update);
 
@@ -137,7 +140,7 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
     serverStoreProxy.append(20L, createPayload(4000L));
     serverStoreProxy.append(20L, createPayload(40000L));
 
-    serverStoreProxy.replaceAtHead(20L, afterReplace, getChain(false, createPayload(800L)));
+    serverStoreProxy.replaceAtHead(20L, afterReplace, Util.getChain(false, createPayload(800L)));
 
     Chain anotherReplace = serverStoreProxy.get(20L);
 
@@ -161,19 +164,20 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
 
     ClusterTierClientEntity clientEntity = createClientEntity("testResolveRequestIsProcessed");
     ServerCallback serverCallback = mock(ServerCallback.class);
-    when(serverCallback.compact(any(Chain.class), any(long.class))).thenReturn(getChain(false, buffer.duplicate()));
+    when(serverCallback.compact(any(Chain.class), any(long.class))).thenReturn(getChain(false,
+                                                                                        ByteBuffer.wrap(new byte[] {0b0}), buffer.duplicate()));
     CommonServerStoreProxy serverStoreProxy = new CommonServerStoreProxy("testResolveRequestIsProcessed", clientEntity, serverCallback);
 
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 7; i++) {
       serverStoreProxy.append(1L, buffer.duplicate());
     }
     verify(serverCallback, never()).compact(any(Chain.class));
-    assertChainHas(serverStoreProxy.get(1L), 42L, 42L, 42L, 42L, 42L, 42L, 42L, 42L);
+    assertChainHas(wrap(serverStoreProxy.get(1L)), 42L, 42L, 42L, 42L, 42L, 42L, 42L);
 
     //trigger compaction at > 8 entries
     serverStoreProxy.append(1L, buffer.duplicate());
     verify(serverCallback).compact(any(Chain.class), any(long.class));
-    assertChainHas(serverStoreProxy.get(1L), 42L);
+    assertChainHas(wrap(serverStoreProxy.get(1L)), 42L);
   }
 
   private static void assertChainHas(Chain chain, long... payLoads) {
@@ -182,6 +186,20 @@ public class CommonServerStoreProxyTest extends AbstractServerStoreProxyTest {
       assertThat(readPayLoad(elements.next().getPayload()), is(Long.valueOf(payLoad)));
     }
     assertThat(elements.hasNext(), is(false));
+  }
+
+  private static Chain wrap(Chain chain) {
+    List<Element> elements = new ArrayList<>();
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      iterator.next();
+    }
+
+    while (iterator.hasNext()) {
+      elements.add(iterator.next());
+    }
+
+    return Util.getChain(elements);
   }
 
 }

@@ -18,14 +18,15 @@ package org.ehcache.clustered.client.internal.store.operations;
 
 import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.ResolvedChain;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.ehcache.clustered.common.internal.store.operations.Operation;
+import org.ehcache.clustered.common.internal.store.operations.PutOperation;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -63,8 +64,14 @@ public abstract class ChainResolver<K, V> {
     PutOperation<K, V> result = null;
     ChainBuilder newChainBuilder = new ChainBuilder();
     boolean matched = false;
-    for (Element element : chain) {
-      ByteBuffer payload = element.getPayload();
+
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      newChainBuilder = newChainBuilder.add(iterator.next().getPayload());
+    }
+
+    while (iterator.hasNext()) {
+      ByteBuffer payload = iterator.next().getPayload();
       Operation<K, V> operation = codec.decode(payload);
 
       if(key.equals(operation.getKey())) {
@@ -78,8 +85,13 @@ public abstract class ChainResolver<K, V> {
 
     if(result == null) {
       if (matched) {
+        int oldChainLength = chain.length();
         Chain newChain = newChainBuilder.build();
-        return new ResolvedChain.Impl<>(newChain, key, null, chain.length() - newChain.length(), Long.MAX_VALUE);
+        if (newChain.length() == 1) {
+          newChain = new ChainBuilder().build();
+          oldChainLength -= 1;
+        }
+        return new ResolvedChain.Impl<>(newChain, key, null, oldChainLength - newChain.length(), Long.MAX_VALUE);
       } else {
         return new ResolvedChain.Impl<>(chain, key, null, 0, Long.MAX_VALUE);
       }
@@ -98,18 +110,25 @@ public abstract class ChainResolver<K, V> {
    */
   public Chain applyOperation(Chain chain, long now) {
     //absent hash-collisions this should always be a 1 entry map
+    ChainBuilder builder = new ChainBuilder();
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      builder = builder.add(iterator.next().getPayload());
+    }
     Map<K, PutOperation<K, V>> compacted = new HashMap<>(2);
-    for (Element element : chain) {
-      ByteBuffer payload = element.getPayload();
+    while (iterator.hasNext()) {
+      ByteBuffer payload = iterator.next().getPayload();
       Operation<K, V> operation = codec.decode(payload);
       compacted.compute(operation.getKey(), (k, v) -> applyOperation(k, v, operation, now));
     }
 
-    ChainBuilder builder = new ChainBuilder();
     for (PutOperation<K, V> operation : compacted.values()) {
       builder = builder.add(codec.encode(operation));
     }
-    return builder.build();
+
+    Chain newChain = builder.build();
+
+    return newChain.length() == 1 ? new ChainBuilder().build() : newChain;
   }
 
   /**

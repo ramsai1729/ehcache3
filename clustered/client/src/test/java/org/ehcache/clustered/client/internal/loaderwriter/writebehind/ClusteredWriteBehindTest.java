@@ -16,14 +16,14 @@
 package org.ehcache.clustered.client.internal.loaderwriter.writebehind;
 
 import org.ehcache.clustered.client.internal.store.operations.ChainResolver;
-import org.ehcache.clustered.client.internal.store.operations.ConditionalRemoveOperation;
 import org.ehcache.clustered.client.internal.store.operations.ExpiryChainResolver;
-import org.ehcache.clustered.client.internal.store.operations.Operation;
-import org.ehcache.clustered.client.internal.store.operations.PutIfAbsentOperation;
-import org.ehcache.clustered.client.internal.store.operations.PutOperation;
-import org.ehcache.clustered.client.internal.store.operations.PutWithWriterOperation;
-import org.ehcache.clustered.client.internal.store.operations.RemoveOperation;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
+import org.ehcache.clustered.common.internal.store.operations.ConditionalRemoveOperation;
+import org.ehcache.clustered.common.internal.store.operations.Operation;
+import org.ehcache.clustered.common.internal.store.operations.PutIfAbsentOperation;
+import org.ehcache.clustered.common.internal.store.operations.PutOperation;
+import org.ehcache.clustered.common.internal.store.operations.PutWithWriterOperation;
+import org.ehcache.clustered.common.internal.store.operations.RemoveOperation;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
 import org.ehcache.clustered.common.internal.store.Util;
@@ -194,7 +194,12 @@ public class ClusteredWriteBehindTest {
   private Map<Long, String> convert(Chain chain, OperationsCodec<Long, String> codec,
                                     ChainResolver<Long, String> resolver, TimeSource timeSource) {
     Map<Long, String> result = new HashMap<>();
-    for (Element element : chain) {
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      iterator.next();
+    }
+    while (iterator.hasNext()) {
+      Element element = iterator.next();
       ByteBuffer payload = element.getPayload();
       Operation<Long, String> operation = codec.decode(payload);
       Long key = operation.getKey();
@@ -208,9 +213,10 @@ public class ClusteredWriteBehindTest {
   }
 
   private Chain makeChain(List<EventInfo> expected, OperationsCodec<Long, String> operationsCodec) {
-    ByteBuffer[] byteBuffers = new ByteBuffer[expected.size()];
-    for (int i = 0; i < byteBuffers.length; i++) {
-      byteBuffers[i] = operationsCodec.encode(expected.get(i).operation);
+    ByteBuffer[] byteBuffers = new ByteBuffer[expected.size() + 1];
+    byteBuffers[0] = ByteBuffer.wrap(new byte[]{0b1});
+    for (int i = 1; i < byteBuffers.length; i++) {
+      byteBuffers[i] = operationsCodec.encode(expected.get(i - 1).operation);
     }
     return chain(byteBuffers);
   }

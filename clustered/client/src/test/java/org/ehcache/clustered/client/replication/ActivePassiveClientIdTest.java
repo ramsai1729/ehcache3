@@ -30,6 +30,7 @@ import org.ehcache.clustered.common.Consistency;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityMessage;
 import org.ehcache.clustered.common.internal.messages.EhcacheEntityResponse;
 import org.ehcache.clustered.common.internal.store.Element;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.ehcache.clustered.lock.server.VoltronReadWriteLockServerEntityService;
 import org.ehcache.clustered.server.ObservableEhcacheServerEntityService;
 import org.ehcache.clustered.server.store.ObservableClusterTierServerEntityService;
@@ -165,7 +166,7 @@ public class ActivePassiveClientIdTest {
     elements.add(getElement(createPayload(44L)));
 
     // Send a replace message, those are not tracked
-    storeProxy.replaceAtHead(44L, getChain(elements), getChain(new ArrayList<>(0)));
+    storeProxy.replaceAtHead(44L, Util.getChain(elements), Util.getChain(new ArrayList<>(0)));
 
     // Not tracked as well
     storeProxy.get(42L);

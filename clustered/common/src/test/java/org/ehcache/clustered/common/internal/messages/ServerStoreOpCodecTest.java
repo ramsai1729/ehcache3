@@ -71,8 +71,10 @@ public class ServerStoreOpCodecTest {
   @Test
   public void testReplaceAtHeadMessageCodec() {
     ServerStoreOpMessage replaceAtHeadMessage = new ServerStoreOpMessage.ReplaceAtHeadMessage(10L,
-        getChain(true, createPayload(10L), createPayload(100L), createPayload(1000L)),
-        getChain(false, createPayload(2000L)));
+                                                                                              org.ehcache.clustered.common.internal.store.Util
+                                                                                                .getChain(true, createPayload(10L), createPayload(100L), createPayload(1000L)),
+                                                                                              org.ehcache.clustered.common.internal.store.Util
+                                                                                                .getChain(false, createPayload(2000L)));
 
     byte[] encoded = STORE_OP_CODEC.encode(replaceAtHeadMessage);
     EhcacheEntityMessage decodedMsg = STORE_OP_CODEC.decode(replaceAtHeadMessage.getMessageType(), wrap(encoded));

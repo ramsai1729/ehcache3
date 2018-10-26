@@ -18,8 +18,8 @@ package org.ehcache.clustered.client.internal.loaderwriter;
 import org.ehcache.clustered.client.internal.store.ServerStoreProxy;
 import org.ehcache.clustered.client.internal.store.lock.LockingServerStoreProxy;
 import org.ehcache.clustered.client.internal.store.operations.EternalChainResolver;
-import org.ehcache.clustered.client.internal.store.operations.PutOperation;
-import org.ehcache.clustered.client.internal.store.operations.codecs.OperationsCodec;
+import org.ehcache.clustered.common.internal.store.operations.PutOperation;
+import org.ehcache.clustered.common.internal.store.operations.codecs.OperationsCodec;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Util;
 import org.ehcache.clustered.loaderWriter.TestCacheLoaderWriter;
@@ -82,7 +82,7 @@ public class ClusteredLoaderWriterStoreTest {
     @SuppressWarnings("unchecked")
     CacheLoaderWriter<Long, String> loaderWriter = mock(CacheLoaderWriter.class);
     PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
-    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    Chain toReturn = Util.getChain(false, ByteBuffer.wrap(new byte[] {0b0}), codec.encode(operation));
     when(storeProxy.get(anyLong())).thenReturn(toReturn);
     ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
             timeSource, loaderWriter);
@@ -119,7 +119,7 @@ public class ClusteredLoaderWriterStoreTest {
     LockingServerStoreProxy storeProxy = mock(LockingServerStoreProxy.class);
     TestCacheLoaderWriter loaderWriter = new TestCacheLoaderWriter();
     PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
-    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    Chain toReturn = Util.getChain(false, ByteBuffer.wrap(new byte[] {0b0}), codec.encode(operation));
     when(storeProxy.lock(anyLong())).thenReturn(toReturn);
     when(storeProxy.get(anyLong())).thenReturn(toReturn);
     ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
@@ -254,7 +254,7 @@ public class ClusteredLoaderWriterStoreTest {
     @SuppressWarnings("unchecked")
     CacheLoaderWriter<Long, String> loaderWriter = mock(CacheLoaderWriter.class);
     PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
-    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    Chain toReturn = Util.getChain(false, ByteBuffer.wrap(new byte[] {0b0}), codec.encode(operation));
     when(storeProxy.lock(anyLong())).thenReturn(toReturn);
     ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
             timeSource, loaderWriter);
@@ -310,7 +310,7 @@ public class ClusteredLoaderWriterStoreTest {
     @SuppressWarnings("unchecked")
     CacheLoaderWriter<Long, String> loaderWriter = mock(CacheLoaderWriter.class);
     PutOperation<Long, String> operation = new PutOperation<>(1L, "one", System.currentTimeMillis());
-    Chain toReturn = Util.getChain(false, codec.encode(operation));
+    Chain toReturn = Util.getChain(false, ByteBuffer.wrap(new byte[] {0b0}), codec.encode(operation));
     when(storeProxy.lock(anyLong())).thenReturn(toReturn);
     ClusteredLoaderWriterStore<Long, String> store = new ClusteredLoaderWriterStore<>(configuration, codec, resolver, storeProxy,
             timeSource, loaderWriter);

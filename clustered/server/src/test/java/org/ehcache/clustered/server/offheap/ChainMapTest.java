@@ -17,6 +17,7 @@ package org.ehcache.clustered.server.offheap;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -26,6 +27,7 @@ import java.util.concurrent.Future;
 import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
 
+import org.ehcache.clustered.common.internal.store.Util;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -78,7 +80,7 @@ public class ChainMapTest {
   public void testInitiallyEmptyChain() {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
 
-    assertThat(map.get("foo"), emptyIterable());
+    assertThat(wrap(map.get("foo")), emptyIterable());
   }
 
   @Test
@@ -86,15 +88,15 @@ public class ChainMapTest {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
 
     map.append("foo", buffer(1));
-    assertThat(map.get("foo"), contains(element(1)));
+    assertThat(wrap(map.get("foo")), contains(element(1)));
   }
 
   @Test
   public void testGetAndAppendToEmptyChain() {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
 
-    assertThat(map.getAndAppend("foo", buffer(1)), emptyIterable());
-    assertThat(map.get("foo"), contains(element(1)));
+    assertThat(wrap(map.getAndAppend("foo", buffer(1))), emptyIterable());
+    assertThat(wrap(map.get("foo")), contains(element(1)));
   }
 
   @Test
@@ -103,7 +105,7 @@ public class ChainMapTest {
     map.append("foo", buffer(1));
 
     map.append("foo", buffer(2));
-    assertThat(map.get("foo"), contains(element(1), element(2)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2)));
   }
 
   @Test
@@ -111,8 +113,8 @@ public class ChainMapTest {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
     map.append("foo", buffer(1));
 
-    assertThat(map.getAndAppend("foo", buffer(2)), contains(element(1)));
-    assertThat(map.get("foo"), contains(element(1), element(2)));
+    assertThat(wrap(map.getAndAppend("foo", buffer(2))), contains(element(1)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2)));
   }
 
   @Test
@@ -122,7 +124,7 @@ public class ChainMapTest {
     map.append("foo", buffer(2));
 
     map.append("foo", buffer(3));
-    assertThat(map.get("foo"), contains(element(1), element(2), element(3)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2), element(3)));
   }
 
   @Test
@@ -131,8 +133,8 @@ public class ChainMapTest {
     map.append("foo", buffer(1));
     map.append("foo", buffer(2));
 
-    assertThat(map.getAndAppend("foo", buffer(3)), contains(element(1), element(2)));
-    assertThat(map.get("foo"), contains(element(1), element(2), element(3)));
+    assertThat(wrap(map.getAndAppend("foo", buffer(3))), contains(element(1), element(2)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2), element(3)));
   }
 
   @Test
@@ -143,7 +145,7 @@ public class ChainMapTest {
     map.append("foo", buffer(3));
 
     map.append("foo", buffer(4));
-    assertThat(map.get("foo"), contains(element(1), element(2), element(3), element(4)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2), element(3), element(4)));
   }
 
   @Test
@@ -153,8 +155,8 @@ public class ChainMapTest {
     map.append("foo", buffer(2));
     map.append("foo", buffer(3));
 
-    assertThat(map.getAndAppend("foo", buffer(4)), contains(element(1), element(2), element(3)));
-    assertThat(map.get("foo"), contains(element(1), element(2), element(3), element(4)));
+    assertThat(wrap(map.getAndAppend("foo", buffer(4))), contains(element(1), element(2), element(3)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2), element(3), element(4)));
   }
 
   @Test
@@ -188,7 +190,7 @@ public class ChainMapTest {
     map.append("foo", buffer(1));
 
     map.replaceAtHead("foo", chain(buffer(2)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(1)));
+    assertThat(wrap(map.get("foo")), contains(element(1)));
   }
 
   @Test
@@ -196,8 +198,9 @@ public class ChainMapTest {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
     map.append("foo", buffer(1));
 
-    map.replaceAtHead("foo", chain(buffer(1)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(42)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1)),
+                      chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(42)));
+    assertThat(wrap(map.get("foo")), contains(element(42)));
   }
 
   @Test
@@ -206,8 +209,9 @@ public class ChainMapTest {
     map.append("foo", buffer(1));
     map.append("foo", buffer(2));
 
-    map.replaceAtHead("foo", chain(buffer(1)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(42), element(2)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1)),
+                      chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(42)));
+    assertThat(wrap(map.get("foo")), contains(element(42), element(2)));
   }
 
   @Test
@@ -217,8 +221,9 @@ public class ChainMapTest {
     map.append("foo", buffer(2));
     map.append("foo", buffer(3));
 
-    map.replaceAtHead("foo", chain(buffer(1)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(42), element(2), element(3)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1)),
+                      chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(42)));
+    assertThat(wrap(map.get("foo")), contains(element(42), element(2), element(3)));
   }
 
   @Test
@@ -228,7 +233,7 @@ public class ChainMapTest {
     map.append("foo", buffer(2));
 
     map.replaceAtHead("foo", chain(buffer(1), buffer(3)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(1), element(2)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2)));
   }
 
   @Test
@@ -237,8 +242,9 @@ public class ChainMapTest {
     map.append("foo", buffer(1));
     map.append("foo", buffer(2));
 
-    map.replaceAtHead("foo", chain(buffer(1), buffer(2)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(42)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1), buffer(2)),
+                      chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(42)));
+    assertThat(wrap(map.get("foo")), contains(element(42)));
   }
 
   @Test
@@ -248,8 +254,9 @@ public class ChainMapTest {
     map.append("foo", buffer(2));
     map.append("foo", buffer(3));
 
-    map.replaceAtHead("foo", chain(buffer(1), buffer(2)), chain(buffer(42)));
-    assertThat(map.get("foo"), contains(element(42), element(3)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1), buffer(2)),
+                      chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(42)));
+    assertThat(wrap(map.get("foo")), contains(element(42), element(3)));
   }
 
   @Test
@@ -260,9 +267,9 @@ public class ChainMapTest {
     map.append("foo", buffer(3));
 
     long before = map.getDataOccupiedMemory();
-    map.replaceAtHead("foo", chain(buffer(1), buffer(2)), chain());
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1), buffer(2)), chain(ByteBuffer.wrap(new byte[]{0b0})));
     assertThat(map.getDataOccupiedMemory(), lessThan(before));
-    assertThat(map.get("foo"), contains(element(3)));
+    assertThat(wrap(map.get("foo")), contains(element(3)));
   }
 
   @Test
@@ -273,7 +280,7 @@ public class ChainMapTest {
     map.append("foo", buffer(3));
 
     map.replaceAtHead("foo", map.get("foo"), chain());
-    assertThat(map.get("foo"), emptyIterable());
+    assertThat(wrap(map.get("foo")), emptyIterable());
   }
 
   @Test
@@ -284,9 +291,9 @@ public class ChainMapTest {
     map.append("foo", buffer(3));
 
     assertThat(map.getDataOccupiedMemory(), greaterThan(0L));
-    map.replaceAtHead("foo", chain(buffer(1), buffer(2), buffer(3)), chain());
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1), buffer(2), buffer(3)), chain());
     assertThat(map.getDataOccupiedMemory(), is(0L));
-    assertThat(map.get("foo"), emptyIterable());
+    assertThat(wrap(map.get("foo")), emptyIterable());
   }
 
   @Test
@@ -405,12 +412,12 @@ public class ChainMapTest {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
     map.append("foo", buffer(1));
     map.append("bar", buffer(2));
-    assertThat(map.get("foo"), contains(element(1)));
-    assertThat(map.get("bar"), contains(element(2)));
+    assertThat(wrap(map.get("foo")), contains(element(1)));
+    assertThat(wrap(map.get("bar")), contains(element(2)));
 
     map.remove("foo");
-    assertThat(map.get("foo").isEmpty(), is(true));
-    assertThat(map.get("bar"), contains(element(2)));
+    assertThat(wrap(map.get("foo")).isEmpty(), is(true));
+    assertThat(wrap(map.get("bar")), contains(element(2)));
   }
 
   @Test
@@ -418,10 +425,10 @@ public class ChainMapTest {
     OffHeapChainMap<String> map = new OffHeapChainMap<>(new UnlimitedPageSource(new OffHeapBufferSource()), StringPortability.INSTANCE, minPageSize, maxPageSize, steal);
     map.append("foo", buffer(1));
     map.append("foo", buffer(2));
-    assertThat(map.get("foo"), contains(element(1), element(2)));
+    assertThat(wrap(map.get("foo")), contains(element(1), element(2)));
 
     map.remove("foo");
-    assertThat(map.get("foo").isEmpty(), is(true));
+    assertThat(wrap(map.get("foo")).isEmpty(), is(true));
   }
 
   private static ByteBuffer buffer(int i) {
@@ -444,6 +451,20 @@ public class ChainMapTest {
         description.appendText("element containing buffer[" + i +"]");
       }
     };
+  }
+
+  private static Chain wrap(Chain chain) {
+    List<Element> elements = new ArrayList<>();
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      iterator.next();
+    }
+
+    while (iterator.hasNext()) {
+      elements.add(iterator.next());
+    }
+
+    return Util.getChain(elements);
   }
 
 

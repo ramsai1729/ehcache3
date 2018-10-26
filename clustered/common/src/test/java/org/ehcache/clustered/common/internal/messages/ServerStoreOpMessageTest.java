@@ -17,6 +17,7 @@
 package org.ehcache.clustered.common.internal.messages;
 
 import org.ehcache.clustered.common.internal.store.Element;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -33,7 +34,8 @@ public class ServerStoreOpMessageTest {
   public void testConcurrencyKeysEqualForSameCacheAndKey() throws Exception {
     ConcurrentEntityMessage m1 = new ServerStoreOpMessage.AppendMessage(1L, createPayload(1L));
     ConcurrentEntityMessage m2 = new ServerStoreOpMessage.GetAndAppendMessage(1L, createPayload(1L));
-    ConcurrentEntityMessage m3 = new ServerStoreOpMessage.ReplaceAtHeadMessage(1L, getChain(Collections.<Element>emptyList()), getChain(Collections.<Element>emptyList()));
+    ConcurrentEntityMessage m3 = new ServerStoreOpMessage.ReplaceAtHeadMessage(1L, Util.getChain(Collections.<Element>emptyList()), Util
+      .getChain(Collections.<Element>emptyList()));
 
     assertThat(m1.concurrencyKey(), is(m2.concurrencyKey()));
     assertThat(m2.concurrencyKey(), is(m3.concurrencyKey()));

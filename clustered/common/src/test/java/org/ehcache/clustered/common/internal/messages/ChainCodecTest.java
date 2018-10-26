@@ -34,7 +34,7 @@ public class ChainCodecTest {
 
   @Test
   public void testChainWithSingleElement() {
-    Chain chain = getChain(false, createPayload(1L));
+    Chain chain = org.ehcache.clustered.common.internal.store.Util.getChain(false, createPayload(1L));
 
     assertThat(chain.isEmpty(), is(false));
     Iterator<Element> chainIterator = chain.iterator();
@@ -51,7 +51,7 @@ public class ChainCodecTest {
 
   @Test
   public void testChainWithSingleSequencedElement() {
-    Chain chain = getChain(true, createPayload(1L));
+    Chain chain = org.ehcache.clustered.common.internal.store.Util.getChain(true, createPayload(1L));
 
     assertThat(chain.isEmpty(), is(false));
     Iterator<Element> chainIterator = chain.iterator();
@@ -70,7 +70,7 @@ public class ChainCodecTest {
 
   @Test
   public void testChainWithMultipleElements() {
-    Chain chain = getChain(false, createPayload(1L), createPayload(2L), createPayload(3L));
+    Chain chain = org.ehcache.clustered.common.internal.store.Util.getChain(false, createPayload(1L), createPayload(2L), createPayload(3L));
 
     assertThat(chain.isEmpty(), is(false));
     Util.assertChainHas(chain, 1L, 2L, 3L);
@@ -83,7 +83,7 @@ public class ChainCodecTest {
 
   @Test
   public void testChainWithMultipleSequencedElements() {
-    Chain chain = getChain(true, createPayload(1L), createPayload(2L), createPayload(3L));
+    Chain chain = org.ehcache.clustered.common.internal.store.Util.getChain(true, createPayload(1L), createPayload(2L), createPayload(3L));
 
     assertThat(chain.isEmpty(), is(false));
     Util.assertChainHas(chain, 1L, 2L, 3L);
@@ -98,7 +98,7 @@ public class ChainCodecTest {
 
   @Test
   public void testEmptyChain() {
-    Chain decoded = ChainCodec.decode(ChainCodec.encode(getChain(false)));
+    Chain decoded = ChainCodec.decode(ChainCodec.encode(org.ehcache.clustered.common.internal.store.Util.getChain(false)));
 
     assertThat(decoded.isEmpty(), is(true));
   }

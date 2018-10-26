@@ -15,7 +15,9 @@
  */
 package org.ehcache.clustered.server.offheap;
 
+import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
+import org.ehcache.clustered.common.internal.store.Util;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -32,7 +34,10 @@ import org.terracotta.offheapstore.storage.portability.WriteContext;
 import org.terracotta.offheapstore.util.Factory;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
@@ -68,26 +73,26 @@ public class ChainMapExtensionTest {
   public void testAppend() {
     OffHeapChainMap<String> map = getChainMapWithExtendedStorageEngine();
     map.append("foo", buffer(1));
-    assertThat(map.get("foo"), contains(element(1)));
+    assertThat(wrap(map.get("foo")), contains(element(1)));
     ChainStorageEngine<String> se = map.getStorageEngine();
     assertThat(se, is(instanceOf(ExtendedOffHeapChainStorageEngine.class)));
     ExtendedOffHeapChainStorageEngine<String> ese = (ExtendedOffHeapChainStorageEngine<String>) se;
     map = getNewMap(ese);
-    assertThat(map.get("foo"), contains(element(1)));
+    assertThat(wrap(map.get("foo")), contains(element(1)));
   }
 
   @Test
   public void testAppendAndReplace() {
     OffHeapChainMap<String> map = getChainMapWithExtendedStorageEngine();
     map.append("foo", buffer(1));
-    assertThat(map.get("foo"), contains(element(1)));
-    map.replaceAtHead("foo", chain(buffer(1)), chain());
+    assertThat(wrap(map.get("foo")), contains(element(1)));
+    map.replaceAtHead("foo", chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(1)), chain());
     ChainStorageEngine<String> se = map.getStorageEngine();
     assertThat(se, is(instanceOf(ExtendedOffHeapChainStorageEngine.class)));
     @SuppressWarnings("unchecked")
     ExtendedOffHeapChainStorageEngine<String> ese = (ExtendedOffHeapChainStorageEngine) se;
     map = getNewMap(ese);
-    assertThat(map.get("foo"), emptyIterable());
+    assertThat(wrap(map.get("foo")), emptyIterable());
   }
 
   @SuppressWarnings("unchecked")
@@ -96,13 +101,13 @@ public class ChainMapExtensionTest {
     OffHeapChainMap<String> map = getChainMapWithExtendedStorageEngine();
     for (int i = 1; i <= 20; i++) {
       map.append("foo" + i, buffer(i));
-      assertThat(map.get("foo" + i), contains(element(i)));
+      assertThat(wrap(map.get("foo" + i)), contains(element(i)));
     }
     for (int i = 1; i <= 20; i++) {
-      assertThat(map.getAndAppend("foo" + i, buffer(1)), contains(element(i)));
+      assertThat(wrap(map.getAndAppend("foo" + i, buffer(1))), contains(element(i)));
     }
     for (int i = 10; i < 15; i++) {
-      map.replaceAtHead("foo" + i, chain(buffer(i), buffer(1)), chain());
+      map.replaceAtHead("foo" + i, chain(ByteBuffer.wrap(new byte[]{0b0}), buffer(i), buffer(1)), chain());
     }
 
     ChainStorageEngine<String> se = map.getStorageEngine();
@@ -111,9 +116,9 @@ public class ChainMapExtensionTest {
     map = getNewMap(ese);
     for (int i = 1; i <= 20; i++) {
       if (i < 10 || i >= 15) {
-        assertThat(map.get("foo" + i), contains(element(i), element(1)));
+        assertThat(wrap(map.get("foo" + i)), contains(element(i), element(1)));
       } else {
-        assertThat(map.get("foo" + i), emptyIterable());
+        assertThat(wrap(map.get("foo" + i)), emptyIterable());
       }
     }
   }
@@ -365,4 +370,20 @@ public class ChainMapExtensionTest {
       }
     }
   }
+
+  private static Chain wrap(Chain chain) {
+    List<Element> elements = new ArrayList<>();
+    Iterator<Element> iterator = chain.iterator();
+    if (iterator.hasNext()) {
+      iterator.next();
+    }
+
+    while (iterator.hasNext()) {
+      elements.add(iterator.next());
+    }
+
+    return Util.getChain(elements);
+  }
+
 }
+

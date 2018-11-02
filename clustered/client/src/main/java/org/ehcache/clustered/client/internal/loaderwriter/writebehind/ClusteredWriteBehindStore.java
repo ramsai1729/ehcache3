@@ -63,14 +63,16 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
                                     ChainResolver<K, V> resolver,
                                     TimeSource timeSource,
                                     CacheLoaderWriter<? super K, V> loaderWriter,
-                                    ExecutorService executorService) {
+                                    ExecutorService executorService, WriteBehindConfiguration writeBehindConfiguration) {
     super(config, codec, resolver, timeSource);
     this.cacheLoaderWriter = loaderWriter;
-    this.clusteredWriteBehind = new ClusteredWriteBehind<>(this, executorService,
-                                                         timeSource,
-                                                         resolver,
-                                                         this.cacheLoaderWriter,
-                                                         codec);
+    this.clusteredWriteBehind = new ClusteredWriteBehind<>(this,
+                                                            writeBehindConfiguration,
+                                                            executorService,
+                                                            timeSource,
+                                                            resolver,
+                                                            this.cacheLoaderWriter,
+                                                            codec);
   }
 
 
@@ -283,7 +285,8 @@ public class ClusteredWriteBehindStore<K, V> extends ClusteredStore<K, V> implem
                                                resolver,
                                                timeSource,
                                                storeConfig.getCacheLoaderWriter(),
-                                               executorService);
+                                               executorService,
+                                               writeBehindConfiguration);
       }
       throw new AssertionError();
     }

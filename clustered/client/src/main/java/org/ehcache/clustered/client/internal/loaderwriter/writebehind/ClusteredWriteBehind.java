@@ -15,6 +15,8 @@
  */
 package org.ehcache.clustered.client.internal.loaderwriter.writebehind;
 
+import org.ehcache.clustered.client.internal.loaderwriter.writebehind.SingleOperation.DeleteOperation;
+import org.ehcache.clustered.client.internal.loaderwriter.writebehind.SingleOperation.WriteOperation;
 import org.ehcache.clustered.client.internal.store.ChainBuilder;
 import org.ehcache.clustered.client.internal.store.operations.ChainResolver;
 import org.ehcache.clustered.common.internal.store.operations.ConditionalRemoveOperation;
@@ -26,10 +28,10 @@ import org.ehcache.clustered.common.internal.store.Chain;
 import org.ehcache.clustered.common.internal.store.Element;
 import org.ehcache.core.spi.time.TimeSource;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
+import org.ehcache.spi.loaderwriter.WriteBehindConfiguration;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -37,12 +39,13 @@ import java.util.concurrent.TimeoutException;
 class ClusteredWriteBehind<K, V> {
   private final ClusteredWriteBehindStore<K, V> clusteredWriteBehindStore;
   private final ExecutorService executorService;
-  private final CacheLoaderWriter<? super K, V> cacheLoaderWriter;
   private final OperationsCodec<K, V> codec;
   private final ChainResolver<K, V> resolver;
   private final TimeSource timeSource;
+  private final WriteBehindOperationProcessor<K, V> eventProcessor;
 
   ClusteredWriteBehind(ClusteredWriteBehindStore<K, V> clusteredWriteBehindStore,
+                       WriteBehindConfiguration writeBehindConfiguration,
                        ExecutorService executorService,
                        TimeSource timeSource,
                        ChainResolver<K, V> resolver,
@@ -51,9 +54,9 @@ class ClusteredWriteBehind<K, V> {
     this.clusteredWriteBehindStore = clusteredWriteBehindStore;
     this.executorService = executorService;
     this.resolver = resolver;
-    this.cacheLoaderWriter = cacheLoaderWriter;
     this.codec = codec;
     this.timeSource = timeSource;
+    this.eventProcessor = getOperationProcessor(writeBehindConfiguration, cacheLoaderWriter);
   }
 
   void flushWriteBehindQueue(Chain ignored, long hash) {
@@ -74,13 +77,13 @@ class ClusteredWriteBehind<K, V> {
               try {
                 if (result != null) {
                   if (result != currentState.get(key) && !(operation instanceof PutOperation)) {
-                    cacheLoaderWriter.write(result.getKey(), result.getValue());
+                    eventProcessor.add(new WriteOperation<>(result.getKey(), result.getValue()));
                   }
-                  currentState.put(key, result.asOperationExpiringAt(result.expirationTime()));
+                  currentState.put(key, result);
                 } else {
                   if (currentState.get(key) != null && (operation instanceof RemoveOperation
                                                         || operation instanceof ConditionalRemoveOperation)) {
-                    cacheLoaderWriter.delete(key);
+                    eventProcessor.add(new DeleteOperation<>(key));
                   }
                   currentState.remove(key);
                 }
@@ -104,4 +107,15 @@ class ClusteredWriteBehind<K, V> {
       }
     });
   }
+
+  private WriteBehindOperationProcessor<K, V> getOperationProcessor(WriteBehindConfiguration writeBehindConfiguration,
+                                                                    CacheLoaderWriter<? super K, V> cacheLoaderWriter) {
+    WriteBehindConfiguration.BatchingConfiguration batchingConfiguration = writeBehindConfiguration.getBatchingConfiguration();
+    if (batchingConfiguration != null) {
+      return new BatchedOperationProcessor<>(batchingConfiguration, cacheLoaderWriter);
+    } else {
+      return new UnBatchedOperationProcessor<>(cacheLoaderWriter);
+    }
+  }
 }
+

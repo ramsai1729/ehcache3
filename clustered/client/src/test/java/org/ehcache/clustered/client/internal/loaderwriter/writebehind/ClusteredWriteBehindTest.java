@@ -33,6 +33,7 @@ import org.ehcache.core.spi.time.TimeSource;
 import org.ehcache.expiry.ExpiryPolicy;
 import org.ehcache.impl.serialization.LongSerializer;
 import org.ehcache.impl.serialization.StringSerializer;
+import org.ehcache.spi.loaderwriter.WriteBehindConfiguration;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -156,6 +157,7 @@ public class ClusteredWriteBehindTest {
     ChainResolver<Long, String> resolver = new ExpiryChainResolver<>(operationCodec, ExpiryPolicy.NO_EXPIRY);
 
     ClusteredWriteBehind<Long, String> clusteredWriteBehind = new ClusteredWriteBehind<>(clusteredWriteBehindStore,
+                                                                                         mock(WriteBehindConfiguration.class),
                                                                                          executorService,
                                                                                          TIME_SOURCE,
                                                                                          resolver,
